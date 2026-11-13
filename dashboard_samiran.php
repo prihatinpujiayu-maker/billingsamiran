@@ -42,7 +42,7 @@ if (isset($_POST['simpan_pelanggan'])) {
             VALUES ('$id_pelanggan', '$no_inv', '$periode_aktif', $tagihan_awal, $biaya_instal, $sewa_router, $total, '$status_byr')");
     }
 
-    header("Location: dashboard_samiran.php?periode=$periode_aktif");
+    header("Location: dashboard_samiran.php?periode=$periode_aktif&pesan=tambah");
     exit;
 }
 
@@ -91,7 +91,7 @@ if (isset($_POST['update_pelanggan'])) {
             VALUES ('$id_pelanggan', '$no_inv', '$periode_aktif', $tagihan_bln, $tunggakan_2025, $biaya_instal, $sewa_router, $diskon, $total_bayar, '$status_bayar', $tgl_bayar, '$ket_rapel')");
     }
 
-    header("Location: dashboard_samiran.php?periode=$periode_aktif");
+    header("Location: dashboard_samiran.php?periode=$periode_aktif&pesan=edit");
     exit;
 }
 
@@ -99,7 +99,7 @@ if (isset($_POST['update_pelanggan'])) {
 if (isset($_GET['hapus'])) {
     $id_hapus = mysqli_real_escape_string($conn, $_GET['hapus']);
     mysqli_query($conn, "DELETE FROM pelanggan_samiran WHERE id_pelanggan='$id_hapus'");
-    header("Location: dashboard_samiran.php?periode=$periode_aktif");
+    header("Location: dashboard_samiran.php?periode=$periode_aktif&pesan=hapus");
     exit;
 }
 
@@ -512,5 +512,39 @@ $query_data = mysqli_query($conn, "
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SweetAlert2 Toast Notification -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php if (isset($_GET['pesan'])): ?>
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    <?php if ($_GET['pesan'] === 'tambah'): ?>
+        Toast.fire({
+            icon: 'success',
+            title: 'Pelanggan baru berhasil ditambahkan!'
+        });
+    <?php elseif ($_GET['pesan'] === 'edit'): ?>
+        Toast.fire({
+            icon: 'success',
+            title: 'Data & tagihan berhasil diperbarui!'
+        });
+    <?php elseif ($_GET['pesan'] === 'hapus'): ?>
+        Toast.fire({
+            icon: 'warning',
+            title: 'Data pelanggan berhasil dihapus!'
+        });
+    <?php endif; ?>
+</script>
+<?php endif; ?>
 </body>
 </html>
