@@ -1,13 +1,13 @@
 <?php
 session_start();
-require_once __DIR__ . '/helpers_salam.php';
 
-if (empty($_SESSION['login'])) {
-    header('Location: login.php');
+// Jika belum login sebagai admin Samiran, paksa buka halaman login
+if (!isset($_SESSION['wilayah']) || $_SESSION['wilayah'] !== 'Samiran') {
+    header("Location: login.php");
     exit;
 }
 
-salamRequireLogin();
-header('Location: dashboard_salam.php');
+// Jika sudah login, arahkan ke dashboard
+header("Location: dashboard_samiran.php");
 exit;
 ?>
