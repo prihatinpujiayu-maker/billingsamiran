@@ -7,7 +7,7 @@ date_default_timezone_set('Asia/Jakarta');
 $host = 'localhost';  
 $username = 'root';  
 $password = '';       
-$dbname = '1pppoebilling';
+$dbname = 'billingpppoe';
 
 $koneksi = new mysqli($host, $username, $password, $dbname);
 
@@ -22,5 +22,4 @@ $koneksi->query("SET time_zone = '+07:00'");
 // walaupun MySQL Event Scheduler sedang mati.
 require_once __DIR__ . '/tagihan_bulanan_otomatis.php';
 salamPastikanTagihanBulanBerjalan($koneksi);
-?>
-
+?> 
