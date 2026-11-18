@@ -340,7 +340,7 @@ function salamExportXlsx(
     $sheetRows = [];
 
     $sheetRows[] = '<row r="1" ht="28" customHeight="1">'
-        . salamExcelTextCell('A1', 'Laporan Billing Semua Wilayah / UKOOMED', 1)
+        . salamExcelTextCell('A1', 'Laporan Billing SAMIRAN / UKOOMED', 1)
         . '</row>';
     $sheetRows[] = '<row r="2" ht="20" customHeight="1">'
         . salamExcelTextCell('A2', 'Rekap data pelanggan dan tagihan', 2)
@@ -591,7 +591,7 @@ header('Content-Type: text/html; charset=utf-8');
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Billing Semua Wilayah <?= h($periodeLabel); ?></title>
+    <title>Laporan Billing SAMIRAN <?= h($periodeLabel); ?></title>
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -817,7 +817,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php if ($format !== 'excel'): ?>
     <div class="toolbar no-print"><button onclick="window.print()">Cetak / Simpan PDF</button></div>
 <?php endif; ?>
-    <div class="report-title">Laporan Billing Semua Wilayah / UKOOMED</div>
+    <div class="report-title">Laporan Billing SAMIRAN / UKOOMED</div>
     <div class="report-subtitle">Rekap data pelanggan dan tagihan </div>
 
     <table class="meta-table">

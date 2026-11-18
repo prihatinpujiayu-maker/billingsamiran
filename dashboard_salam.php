@@ -12,7 +12,7 @@ $isAdminWilayahSalam = !$isSuperAdminSalam
     && strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 $canAccessAnalitikSalam = $isSuperAdminSalam || $isAdminSemuaWilayahSalam || $isAdminWilayahSalam;
 $canAccessAllWilayah = salamCanAccessAllWilayah();
-$dashboardWilayah = $canAccessAllWilayah ? 'SEMUA WILAYAH' : salamWilayahLogin();
+$dashboardWilayah = 'SAMIRAN';
 $alamatWilayahResmi = array_values(salamDaftarWilayahResmi());
 $dashboardBulanOptions = [
     '01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni',
@@ -2169,14 +2169,7 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <?php if ($canAccessAllWilayah): ?>
-                <div class="search-box" style="min-width:220px;">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <select id="wilayah-filter" aria-label="Filter wilayah" style="width:100%;border:0;outline:0;background:transparent;padding:8px 4px;">
-                        <option value="all">Semua Wilayah</option>
-                    </select>
-                </div>
-                <?php endif; ?>
+
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="search" placeholder="Cari pelanggan / alamat...">
