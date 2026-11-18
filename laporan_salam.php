@@ -407,7 +407,7 @@ $exportQuery = http_build_query([
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Billing Semua Wilayah / UKOOMED</title>
+    <title>Laporan Billing SAMIRAN / UKOOMED</title>
     <link rel="icon" href="logo_cleon.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -1036,7 +1036,7 @@ $exportQuery = http_build_query([
 </head>
 <body>
     <div class="header">
-        <h1><i class="fas fa-file-invoice-dollar"></i> Laporan Billing Semua Wilayah</h1>
+        <h1><i class="fas fa-file-invoice-dollar"></i> Laporan Billing SAMIRAN</h1>
         <div class="header-actions">
             <a href="dashboard_salam.php" class="nav-btn btn-dashboard"><i class="fas fa-arrow-left"></i> Dashboard</a>
             <a href="logout.php" class="nav-btn btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -1046,7 +1046,7 @@ $exportQuery = http_build_query([
     <div class="container">
         <div class="page-title">
             <div>
-                <h2>Laporan Billing Semua Wilayah / UKOOMED</h2>
+                <h2>Laporan Billing SAMIRAN / UKOOMED</h2>
 
             </div>
         </div>
@@ -1116,15 +1116,7 @@ $exportQuery = http_build_query([
                             <option value="Tidak Aktif" <?= $statusPelanggan === 'Tidak Aktif' ? 'selected' : ''; ?>>Tidak Aktif</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="alamat">Alamat</label>
-                        <select id="alamat" name="alamat">
-                            <option value="all" <?= $alamatFilter === 'all' ? 'selected' : ''; ?>>Semua alamat</option>
-                            <?php foreach ($alamatOptions as $alamatOption): ?>
-                                <option value="<?= htmlspecialchars($alamatOption); ?>" <?= $alamatFilter === $alamatOption ? 'selected' : ''; ?>><?= htmlspecialchars($alamatOption); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+
                     <div>
                         <label for="search">Cari Pelanggan</label>
                         <input type="text" id="search" name="search" value="<?= htmlspecialchars($search); ?>" placeholder="Nama / ID / alamat / paket">
