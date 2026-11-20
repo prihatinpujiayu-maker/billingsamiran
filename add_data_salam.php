@@ -15,7 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $idPelanggan = trim($_POST['id_pelanggan'] ?? '');
 $kodePelanggan = trim($_POST['kode_pelanggan'] ?? '');
 $nama = trim($_POST['nama'] ?? '');
-$paket = trim($_POST['paket'] ?? '');
+$paketInput = trim($_POST['paket'] ?? '');
+$paket = $paketInput !== '' ? $paketInput : '-';
+$tanggalPasangInput = trim((string) ($_POST['tanggal_pasang'] ?? ''));
+$tanggalPasang = $tanggalPasangInput !== '' ? $tanggalPasangInput : '-';
 $nomor = trim($_POST['nomor_pelanggan'] ?? '');
 $alamat = salamCanAccessAllWilayah()
     ? salamNormalisasiAlamatInput($_POST['alamat'] ?? '')
@@ -41,7 +44,7 @@ if (!salamDetailPelangganTableReady($koneksi)) {
     exit;
 }
 
-if ($nama === '' || $paket === '') {
+if ($nama === '') {
     echo json_encode(['success'=>false,'message'=>'Nama dan paket wajib diisi.']);
     exit;
 }
@@ -57,8 +60,8 @@ if ($tarif < 0) {
 $fotoBaru = null;
 $koneksi->begin_transaction();
 try {
-    $stmt = $koneksi->prepare('INSERT INTO pelanggan_salam (id_pelanggan, kode_pelanggan, nama, nomor_pelanggan, alamat, paket, tarif_langganan, tagihan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->bind_param('ssssssdd', $idPelanggan, $kodePelanggan, $nama, $nomor, $alamat, $paket, $tarif, $tarif);
+    $stmt = $koneksi->prepare('INSERT INTO pelanggan_salam (id_pelanggan, kode_pelanggan, nama, nomor_pelanggan, alamat, tanggal_pasang, paket, tarif_langganan, tagihan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->bind_param('sssssssdd', $idPelanggan, $kodePelanggan, $nama, $nomor, $alamat, $tanggalPasang, $paket, $tarif, $tarif);
     if (!$stmt->execute()) {
         throw new RuntimeException('Gagal menyimpan pelanggan: ' . $stmt->error);
     }

@@ -25,6 +25,7 @@ $sourceSql = "
         p.nama,
         COALESCE(p.nomor_pelanggan,'') AS nomor_pelanggan,
         p.alamat,
+        COALESCE(p.tanggal_pasang, '-') AS tanggal_pasang,
         p.paket,
         p.tarif_langganan,
         p.tagihan,
@@ -49,6 +50,7 @@ $sourceSql = "
         COALESCE(NULLIF(t.nama_snapshot,''),p.nama) AS nama,
         COALESCE(p.nomor_pelanggan,'') AS nomor_pelanggan,
         COALESCE(NULLIF(t.alamat_snapshot,''),p.alamat) AS alamat,
+        COALESCE(p.tanggal_pasang, '-') AS tanggal_pasang,
         COALESCE(NULLIF(t.paket_snapshot,''),p.paket) AS paket,
         COALESCE(NULLIF(t.tarif_snapshot,0),p.tarif_langganan,t.nominal_tagihan,0) AS tarif_langganan,
         CASE WHEN t.status_bayar='Lunas' THEN 0 ELSE t.nominal_tagihan END AS tagihan,
@@ -146,7 +148,7 @@ function salamPesanSemuaTunggakan(array $row, array $tunggakan): string {
 ob_start();
 ?>
 <table class="modern-table">
-    <thead><tr><th>No</th><th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Alamat</th><th>Status Pelanggan</th><th>Paket</th><th>Masa Aktif Sampai</th><th>Tagihan Bulan</th><th>Tagihan</th><th>Status</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>No</th><th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Alamat</th><th>Tanggal Pasang</th><th>Status Pelanggan</th><th>Paket</th><th>Masa Aktif Sampai</th><th>Tagihan Bulan</th><th>Tagihan</th><th>Status</th><th>Aksi</th></tr></thead>
     <tbody>
 <?php if ($result && $result->num_rows > 0): ?>
 <?php $no = $offset + 1; while ($row = $result->fetch_assoc()):
@@ -165,6 +167,7 @@ ob_start();
 <td><span class="id-pill"><?= esc($row['id_pelanggan'] ?: '-'); ?></span></td>
 <td><div class="name-cell"><?= esc($row['nama']); ?></div><small class="muted"><?= esc($row['nomor_pelanggan'] ?: '-'); ?></small></td>
 <td><?= esc(salamNamaWilayahTampilan($row['alamat'] ?: '-')); ?></td>
+<td><?= esc($row['tanggal_pasang'] ?: '-'); ?></td>
 <td><button type="button" class="badge <?= $statusPelanggan === 'Aktif' ? 'badge-success' : 'badge-danger'; ?>" onclick="updateStatusPelanggan(<?= $pelangganId; ?>, '<?= $statusPelanggan; ?>')" title="Klik untuk mengubah status pelanggan" style="border:0;cursor:pointer;"><?= esc($statusPelanggan); ?></button></td>
 <td><?= esc($row['paket']); ?></td>
 <td class="muted"><?= esc(salamBulananIndonesia($row['langganan_selesai'] ?? null, true)); ?></td>
@@ -191,7 +194,7 @@ ob_start();
 <?php endif; ?>
 </div></td>
 </tr>
-<?php endwhile; else: ?><tr><td colspan="11" style="text-align:center; padding:30px; color:#6c757d;">Tidak ada data ditemukan untuk periode ini.</td></tr><?php endif; ?>
+<?php endwhile; else: ?><tr><td colspan="12" style="text-align:center; padding:30px; color:#6c757d;">Tidak ada data ditemukan untuk periode ini.</td></tr><?php endif; ?>
 </tbody></table>
 <?php
 $table = ob_get_clean();

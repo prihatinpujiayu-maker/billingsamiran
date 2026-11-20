@@ -452,7 +452,7 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
     #add-modal .note { font-size: 13px; color: #6c757d; margin-top: 12px; }
     #add-modal .actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 20px; }
     #add-modal .btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
-    #add-modal .btn-primary { background: #f1f5f9; (90deg,var(--accent),#2980b9); color: #213; }
+    #add-modal .btn-primary { background: linear-gradient(90deg, #3498db, #2980b9); color: #fff; }
     #add-modal .btn-muted { background: #f1f5f9; color: #213; }
 
     /* -- Styles untuk Modal Pesan (khusus Salam) -- */
@@ -1689,61 +1689,73 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
 
             #table-container .modern-table th,
             #table-container .modern-table td {
-                padding-left: 6px !important;
-                padding-right: 6px !important;
+                padding-left: 5px !important;
+                padding-right: 5px !important;
             }
 
-            /* Urutan kolom setelah update Alamat:
-               No, ID, Nama, Alamat, Status Pelanggan, Paket,
-               Masa Aktif, Tagihan Bulan, Tagihan, Status, Aksi. */
+            /* 1:No, 2:ID, 3:Nama, 4:Alamat, 5:Tgl Pasang, 6:Status Pelanggan,
+               7:Paket, 8:Masa Aktif, 9:Bulan, 10:Tagihan, 11:Status, 12:Aksi */
             #table-container .modern-table th:nth-child(1),
-            #table-container .modern-table td:nth-child(1) { width: 3.3% !important; text-align: center !important; }
+            #table-container .modern-table td:nth-child(1) { width: 3.0% !important; text-align: center !important; }
 
             #table-container .modern-table th:nth-child(2),
-            #table-container .modern-table td:nth-child(2) { width: 7.6% !important; }
+            #table-container .modern-table td:nth-child(2) { width: 7.0% !important; }
 
             #table-container .modern-table th:nth-child(3),
-            #table-container .modern-table td:nth-child(3) { width: 12.4% !important; }
+            #table-container .modern-table td:nth-child(3) { width: 11.2% !important; }
 
             #table-container .modern-table th:nth-child(4),
-            #table-container .modern-table td:nth-child(4) { width: 8.8% !important; }
+            #table-container .modern-table td:nth-child(4) { width: 8.0% !important; }
 
             #table-container .modern-table th:nth-child(5),
-            #table-container .modern-table td:nth-child(5) { width: 8.0% !important; text-align: center !important; }
+            #table-container .modern-table td:nth-child(5) { width: 7.4% !important; }
 
             #table-container .modern-table th:nth-child(6),
-            #table-container .modern-table td:nth-child(6) { width: 8.2% !important; }
+            #table-container .modern-table td:nth-child(6) { width: 7.2% !important; text-align: center!important; }
 
             #table-container .modern-table th:nth-child(7),
-            #table-container .modern-table td:nth-child(7) { width: 8.2% !important; }
+            #table-container .modern-table td:nth-child(7) { 
+                width: 5.8% !important;
+                text-align: center !important;
+                padding-left: 4px !important;
+                padding-right: 4px !important; 
+            }
 
             #table-container .modern-table th:nth-child(8),
-            #table-container .modern-table td:nth-child(8) { width: 7.6% !important; }
+            #table-container .modern-table td:nth-child(8) { width: 7.8% !important; }
 
             #table-container .modern-table th:nth-child(9),
-            #table-container .modern-table td:nth-child(9) { width: 7.0% !important; }
+            #table-container .modern-table td:nth-child(9) { width: 7.4% !important; }
 
             #table-container .modern-table th:nth-child(10),
-            #table-container .modern-table td:nth-child(10) {
-                width: 7.0% !important;
+            #table-container .modern-table td:nth-child(10) { 
+                width: 7.2% !important; 
+                text-align: left !important;
+                padding-left: 6px !important;
+                padding-right: 4px !important;
+            }
+
+            #table-container .modern-table th:nth-child(11),
+            #table-container .modern-table td:nth-child(11) {
+                width: 7.6% !important;
                 min-width: 0 !important;
                 text-align: center !important;
                 padding-left: 4px !important;
                 padding-right: 4px !important;
             }
 
-            #table-container .modern-table th:nth-child(11),
-            #table-container .modern-table td:nth-child(11) {
-                width: 21.9% !important;
+            #table-container .modern-table th:nth-child(12),
+            #table-container .modern-table td:nth-child(12) {
+                width: 18.4% !important;
                 min-width: 0 !important;
-                text-align: left !important;
-                padding-left: 4px !important;
-                padding-right: 4px !important;
+                text-align: center !important;
+                padding-left: 6px !important;
+                padding-right: 6px !important;
             }
 
-            #table-container .modern-table td:nth-child(10) .badge {
+            #table-container .modern-table td:nth-child(11) .badge {
                 margin: 0 !important;
-                min-width: 70px !important;
+                min-width: 72px !important;
             }
 
             #table-container .modern-table td.actions-cell {
@@ -1753,22 +1765,25 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
             }
 
             #table-container .modern-table td.actions-cell .action-row {
-                justify-content: flex-start !important;
-                gap: 3px !important;
-                width: 100% !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                flex-wrap: nowrap !important;
+                gap: 4px !important;
+                width: auto !important;
                 max-width: 100% !important;
             }
 
             #table-container .modern-table td.actions-cell .action-btn {
                 min-height: 31px !important;
-                padding: 6px 5px !important;
+                padding: 6px 6px !important;
                 font-size: 10px !important;
                 border-radius: 7px !important;
             }
 
             #table-container .modern-table td.actions-cell .action-btn.icon-only {
-                width: 29px !important;
-                min-width: 29px !important;
+                width: 28px !important;
+                min-width: 28px !important;
                 height: 31px !important;
                 padding: 0 !important;
             }
@@ -2213,7 +2228,7 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
                             <div class="grid" style="margin-top:12px">
                                 <div class="col">
                                     <label class="small">Paket</label>
-                                    <input type="text" name="paket" required placeholder="">
+                                    <input type="text" name="paket" placeholder="-">
                                 </div>
                                 <div class="col">
                                     <label class="small">Nomor WhatsApp</label>
@@ -2239,6 +2254,10 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
                                 <div class="col">
                                     <label class="small">Tarif Langganan / Tagihan Awal</label>
                                     <input type="number" name="tagihan" value="" required>
+                                </div>
+                                <div class="col">
+                                    <label class="small">Tanggal Pasang</label>
+                                    <input type="text" name="tanggal_pasang" placeholder="Contoh: 6 Mei 2021 atau -">
                                 </div>
                             </div>
                             <div style="margin-top:18px;padding-top:15px;border-top:1px solid #e9eef3;">
