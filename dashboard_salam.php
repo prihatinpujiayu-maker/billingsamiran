@@ -45,6 +45,29 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
     <link rel="apple-touch-icon" sizes="180x180" href="logo_cleon.png">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        body.mode-biaya-instalasi {
+    overflow: hidden !important;
+}
+
+body.mode-biaya-instalasi #table-container,
+body.mode-biaya-instalasi #pagination {
+    display: none !important;
+}
+
+body.mode-biaya-instalasi #biaya-instalasi {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 9999;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding: 25px;
+    background: #f5f7f9;
+}
         :root {
             --primary: #3498db;
             --secondary: #2c3e50;
@@ -2105,6 +2128,12 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
             <a href="monitoring_pppoe.php" class="monitor-btn">
                 <i class="fas fa-map-location-dot"></i> Monitoring PPPoE
             </a>
+            <a href="#biaya-instalasi"
+              class="monitor-btn"
+              style="background:#16a085;"
+              onclick="event.preventDefault(); document.body.classList.add('mode-biaya-instalasi');">
+            <i  class="fas fa-screwdriver-wrench"></i> Biaya Instalasi
+           </a>
             <?php if ($canAccessAnalitikSalam): ?>
                 <a href="analitik_salam.php" class="analytics-btn">
                     <i class="fas fa-chart-column"></i> Ringkasan Analitik
@@ -2372,6 +2401,142 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
 
         <div class="pagination" id="pagination">
             </div>
+        
+<!-- BAGIAN BIAYA INSTALASI SAMIRAN -->
+<section id="biaya-instalasi" style="
+    margin:25px 0;
+    padding:22px;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+    <h2 style="color:#16a085;margin:0;">
+        <i class="fas fa-screwdriver-wrench"></i>
+        Biaya Instalasi Pelanggan
+    </h2>
+
+    <button type="button"
+        onclick="document.body.classList.remove('mode-biaya-instalasi'); window.location.hash=''; window.scrollTo(0,0);"
+        style="padding:11px 18px;background:#3498db;color:white;border:0;border-radius:7px;cursor:pointer;font-weight:bold;">
+        <i class="fas fa-arrow-left"></i>
+        Kembali ke Dashboard
+    </button>
+</div>
+
+    <p style="color:#666;">
+        Pengelolaan biaya instalasi satu kali untuk setiap pelanggan.
+        Data ini terpisah dari tagihan bulanan.
+    </p>
+
+    <form id="form-biaya-instalasi" style="
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:12px;
+        margin-bottom:25px;
+    ">
+        <div>
+            <label>Pilih Pelanggan</label>
+            <select name="pelanggan_id" required style="width:100%;padding:11px;margin-top:6px;">
+                <option value="">-- Pilih Pelanggan --</option>
+                <?php
+                $daftarPelangganInstalasi = $koneksi->query(
+                    "SELECT id, id_pelanggan, nama
+                     FROM pelanggan_salam
+                     ORDER BY nama ASC"
+                );
+
+                if ($daftarPelangganInstalasi):
+                    while ($pel = $daftarPelangganInstalasi->fetch_assoc()):
+                ?>
+                    <option value="<?= (int) $pel['id']; ?>">
+                        <?= htmlspecialchars($pel['nama']); ?>
+                        (<?= htmlspecialchars($pel['id_pelanggan']); ?>)
+                    </option>
+                <?php
+                    endwhile;
+                endif;
+                ?>
+            </select>
+        </div>
+
+        <div>
+    <label>Nominal Biaya (Rp)</label>
+    <input
+        type="number"
+        name="nominal"
+        min="1"
+        step="any"
+        inputmode="numeric"
+        placeholder="Ketik nominal biaya sendiri"
+        required
+        style="width:100%;padding:11px;margin-top:6px;box-sizing:border-box;">
+</div>
+
+        <div>
+            <label>Tanggal Instalasi</label>
+            <input type="date" name="tanggal_instalasi"
+                style="width:100%;padding:11px;margin-top:6px;box-sizing:border-box;">
+        </div>
+
+        <div>
+            <label>Status Pembayaran</label>
+            <select name="status_bayar" required
+                style="width:100%;padding:11px;margin-top:6px;">
+                <option value="Belum Lunas">Belum Lunas</option>
+                <option value="Lunas">Lunas</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Tanggal Pembayaran</label>
+            <input type="date" name="tanggal_bayar"
+                style="width:100%;padding:11px;margin-top:6px;box-sizing:border-box;">
+        </div>
+
+        <div>
+            <label>Keterangan</label>
+            <input type="text" name="keterangan"
+                placeholder="Keterangan tambahan"
+                style="width:100%;padding:11px;margin-top:6px;box-sizing:border-box;">
+        </div>
+
+        <div style="display:flex;align-items:end;">
+            <button type="submit" style="
+                width:100%;padding:12px;background:#16a085;
+                color:white;border:0;border-radius:7px;
+                cursor:pointer;font-weight:bold;">
+                <i class="fas fa-save"></i> Simpan Biaya Instalasi
+            </button>
+        </div>
+    </form>
+
+    <h3>Daftar Biaya Instalasi</h3>
+
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:750px;">
+            <thead>
+                <tr style="background:#16a085;color:white;">
+                    <th style="padding:12px;">No.</th>
+                    <th style="padding:12px;">Pelanggan</th>
+                    <th style="padding:12px;">Nominal</th>
+                    <th style="padding:12px;">Tanggal Instalasi</th>
+                    <th style="padding:12px;">Status</th>
+                    <th style="padding:12px;">Tanggal Bayar</th>
+                    <th style="padding:12px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="daftar-biaya-instalasi">
+                <tr>
+                    <td colspan="7" style="padding:15px;text-align:center;">
+                        Memuat data...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+<!-- AKHIR BAGIAN BIAYA INSTALASI -->
 
         <!-- Modal untuk Menampilkan Pesan (Khusus Salam) -->
         <div id="message-modal" style="display:none;">
@@ -3314,6 +3479,184 @@ $dashboardYearOptions = range($dashboardMaxYear, $dashboardMinYear);
         mulaiLabelKartuMobile();
     }
 })();
+</script>
+
+<script>
+const apiBiayaInstalasi = 'api_biaya_instalasi_samiran.php';
+
+function formatRupiahInstalasi(angka) {
+    return 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
+}
+
+function escapeInstalasi(teks) {
+    return String(teks ?? '').replace(/[&<>"']/g, function (karakter) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[karakter];
+    });
+}
+
+async function muatBiayaInstalasi() {
+    const tbody = document.getElementById('daftar-biaya-instalasi');
+
+    try {
+        const response = await fetch(apiBiayaInstalasi);
+        const hasil = await response.json();
+
+        if (!hasil.success) {
+            throw new Error(hasil.message || 'Gagal mengambil data.');
+        }
+
+        if (!hasil.data.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding:15px;text-align:center;">
+                        Belum ada data biaya instalasi.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        tbody.innerHTML = hasil.data.map((item, index) => `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;text-align:center;">${index + 1}</td>
+                <td style="padding:12px;">
+                    <strong>${escapeInstalasi(item.nama)}</strong><br>
+                    <small>${escapeInstalasi(item.id_pelanggan)}</small>
+                </td>
+                <td style="padding:12px;">
+                    ${formatRupiahInstalasi(item.nominal)}
+                </td>
+                <td style="padding:12px;">
+                    ${escapeInstalasi(item.tanggal_instalasi || '-')}
+                </td>
+                <td style="padding:12px;">
+                    <strong style="color:${item.status_bayar === 'Lunas' ? '#16a085' : '#e67e22'};">
+                        ${escapeInstalasi(item.status_bayar)}
+                    </strong>
+                </td>
+                <td style="padding:12px;">
+                    ${escapeInstalasi(item.tanggal_bayar || '-')}
+                </td>
+                <td style="padding:12px;">
+                    <select
+    onchange="
+        this.style.backgroundColor = this.value === 'Lunas' ? '#3498db' : '#e74c3c';
+        this.style.color = '#ffffff';
+        ubahStatusInstalasi(${Number(item.id)}, this.value);
+    "
+    style="
+        padding:8px 12px;
+        border:0;
+        border-radius:6px;
+        cursor:pointer;
+        font-weight:bold;
+        color:white;
+        background-color:${item.status_bayar === 'Lunas' ? '#3498db' : '#e74c3c'};
+        outline:none;
+        box-shadow:none;
+        filter:none;
+        transition:none;
+        appearance:auto;
+        -webkit-appearance:auto;
+    "
+>
+    <option value="Belum Lunas" style="background:#e74c3c;color:white;"
+        ${item.status_bayar === 'Belum Lunas' ? 'selected' : ''}>
+        Belum Lunas
+    </option>
+
+    <option value="Lunas" style="background:#3498db;color:white;"
+        ${item.status_bayar === 'Lunas' ? 'selected' : ''}>
+        Lunas
+    </option>
+</select>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="padding:15px;text-align:center;color:red;">
+                    ${escapeInstalasi(error.message)}
+                </td>
+            </tr>`;
+    }
+}
+
+document.getElementById('form-biaya-instalasi')
+    .addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const form = this;
+        const formData = new FormData(form);
+        formData.append('action', 'simpan');
+
+        try {
+            const response = await fetch(apiBiayaInstalasi, {
+                method: 'POST',
+                body: formData
+            });
+
+            const hasil = await response.json();
+
+            if (!hasil.success) {
+                throw new Error(hasil.message);
+            }
+
+            await Swal.fire('Berhasil', hasil.message, 'success');
+
+            form.reset();
+            await muatBiayaInstalasi();
+
+        } catch (error) {
+            Swal.fire('Gagal', error.message, 'error');
+        }
+    });
+
+async function ubahStatusBiayaInstalasi(id, status) {
+    const konfirmasi = await Swal.fire({
+        title: 'Ubah status pembayaran?',
+        text: 'Status akan diubah menjadi ' + status,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, ubah',
+        cancelButtonText: 'Batal'
+    });
+
+    if (!konfirmasi.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('action', 'ubah_status');
+    formData.append('id', id);
+    formData.append('status_bayar', status);
+
+    try {
+        const response = await fetch(apiBiayaInstalasi, {
+            method: 'POST',
+            body: formData
+        });
+
+        const hasil = await response.json();
+
+        if (!hasil.success) {
+            throw new Error(hasil.message);
+        }
+
+        await muatBiayaInstalasi();
+        Swal.fire('Berhasil', hasil.message, 'success');
+
+    } catch (error) {
+        Swal.fire('Gagal', error.message, 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', muatBiayaInstalasi);
 </script>
 
 </body>
