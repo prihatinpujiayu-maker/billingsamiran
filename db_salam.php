@@ -7,12 +7,17 @@ date_default_timezone_set('Asia/Jakarta');
 $host = 'localhost';  
 $username = 'root';  
 $password = '';       
-$dbname = 'billing_samiran';
+$dbname = 'billingpppoe';
 
-$koneksi = new mysqli($host, $username, $password, $dbname);
+$koneksi = @new mysqli($host, $username, $password, $dbname);
 
 if ($koneksi->connect_error) {
-    die('Koneksi database Billing gagal: ' . $koneksi->connect_error);
+    // Fallback ke billing_samiran jika nama database berbeda
+    $altDb = ($dbname === 'billingpppoe') ? 'billing_samiran' : 'billingpppoe';
+    $koneksi = @new mysqli($host, $username, $password, $altDb);
+    if ($koneksi->connect_error) {
+        die('Koneksi database Billing gagal: ' . $koneksi->connect_error);
+    }
 }
 
 $koneksi->set_charset('utf8mb4');
