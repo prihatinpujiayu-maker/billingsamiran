@@ -343,18 +343,90 @@ body.mode-biaya-instalasi #biaya-instalasi {
             border-bottom: 2px solid #2980b9; 
         }
     /* Kolom Dashboard Salam sama seperti dashboard admin lain. */
-    .modern-table { min-width: 1320px; table-layout: fixed; }
-    .modern-table th:nth-child(1) { width: 4%; }   /* No */
-    .modern-table th:nth-child(2) { width: 10%; }  /* ID Pelanggan */
-    .modern-table th:nth-child(3) { width: 15%; }  /* Nama Pelanggan */
-    .modern-table th:nth-child(4) { width: 10%; }  /* Status Pelanggan */
-    .modern-table th:nth-child(5) { width: 10%; }  /* Paket */
-    .modern-table th:nth-child(6) { width: 12%; }  /* Masa Aktif Sampai */
-    .modern-table th:nth-child(7) { width: 10%; }  /* Tagihan Bulan */
-    .modern-table th:nth-child(8) { width: 10%; }  /* Tagihan */
-    .modern-table th:nth-child(9) { width: 10%; }  /* Status Bayar */
-    .modern-table th:nth-child(10) { width: 19%; min-width: 300px; text-align: center; } /* Aksi */
+    .modern-table { min-width: 1400px; table-layout: fixed; }
+    .modern-table th:nth-child(1) { width: 3.5%; }  /* No */
+    .modern-table th:nth-child(2) { width: 8.5%; }  /* ID Pelanggan */
+    .modern-table th:nth-child(3) { width: 12%; }   /* Nama Pelanggan */
+    .modern-table th:nth-child(4) { width: 12%; }   /* Alamat */
+    .modern-table th:nth-child(5) { width: 8%; }    /* Tanggal Pasang */
+    .modern-table th:nth-child(6) { width: 7%; }    /* Status Pelanggan */
+    .modern-table th:nth-child(7) { width: 11%; }   /* Paket */
+    .modern-table th:nth-child(8) { width: 9%; }    /* Masa Aktif Sampai */
+    .modern-table th:nth-child(9) { width: 8%; }    /* Tagihan Bulan */
+    .modern-table th:nth-child(10) { width: 8%; }   /* Tagihan */
+    .modern-table th:nth-child(11) { width: 7%; }   /* Status Bayar */
+    .modern-table th:nth-child(12) { width: 16%; min-width: 250px; text-align: center; } /* Aksi */
         .modern-table td { padding: 14px 18px; border-bottom: 1px solid var(--light-gray); vertical-align: middle; color: #333; word-wrap: break-word; }
+
+    /* Paket & Riwayat Status Styling */
+    .paket-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-start;
+    }
+    .paket-name {
+        font-weight: 600;
+        color: var(--dark, #2c3e50);
+        font-size: 13.5px;
+        display: inline-block;
+    }
+    .paket-badge-wrapper {
+        display: inline-flex;
+        align-items: center;
+    }
+    .paket-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .paket-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    }
+    .badge-upgrade {
+        background-color: #e8f8f5;
+        color: #0e6251;
+        border: 1px solid #a3e4d7;
+    }
+    .badge-upgrade:hover {
+        background-color: #27ae60;
+        color: #fff;
+        border-color: #27ae60;
+    }
+    .badge-downgrade {
+        background-color: #fef5e7;
+        color: #935116;
+        border: 1px solid #fad7a0;
+    }
+    .badge-downgrade:hover {
+        background-color: #e67e22;
+        color: #fff;
+        border-color: #e67e22;
+    }
+    .badge-penyesuaian {
+        background-color: #ebf5fb;
+        color: #21618c;
+        border: 1px solid #aed6f1;
+    }
+    .badge-penyesuaian:hover {
+        background-color: #2980b9;
+        color: #fff;
+        border-color: #2980b9;
+    }
+    .paket-selisih {
+        font-size: 10px;
+        font-weight: 600;
+        opacity: 0.9;
+    }
         .id-pill { display: inline-block; padding: 6px 10px; background: var(--light-gray); border-radius: 15px; color: var(--secondary); font-weight: 600; font-size: 13px; }
         .name-cell { font-weight: 600; color: var(--dark); }
         .muted { color: var(--gray); font-size: 13px; }
@@ -2564,6 +2636,40 @@ body.mode-biaya-instalasi #biaya-instalasi {
         function openEditModal(id, periode = currentPeriode) { createEditModalIfNeeded(); const modal = document.getElementById('edit-modal'); const iframe = document.getElementById('edit-iframe'); iframe.src = `edit_salam.php?id=${id}&periode=${encodeURIComponent(periode)}&modal=1`; modal.classList.add('open'); }
         function closeEditModal() { const modal = document.getElementById('edit-modal'); if (!modal) return; modal.classList.remove('open'); setTimeout(() => { document.getElementById('edit-iframe').src = 'about:blank'; loadData(currentPage, currentSearch, currentFilter); loadStats(); }, 320); }
         window.addEventListener('message', (e) => { try { const data = JSON.parse(e.data); if (data && data.action === 'close') closeEditModal(); } catch (err) {} });
+        
+        // Menampilkan modal detail perubahan paket pelanggan (Upgrade / Downgrade)
+        function showPaketDetail(info) {
+            if (!info) return;
+            const isUp = info.jenis === 'Upgrade';
+            const isDown = info.jenis === 'Downgrade';
+            const badgeColor = isUp ? '#27ae60' : (isDown ? '#e67e22' : '#2980b9');
+            const badgeBg = isUp ? '#e8f8f5' : (isDown ? '#fef5e7' : '#ebf5fb');
+            const icon = isUp ? '↑' : (isDown ? '↓' : '↔');
+
+            Swal.fire({
+                title: `<div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;">
+                    <span style="background:${badgeBg};color:${badgeColor};padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;">
+                        ${icon} ${info.jenis}
+                    </span>
+                    <span>Detail Perubahan Paket</span>
+                </div>`,
+                html: `
+                    <div style="text-align:left;font-size:13.5px;line-height:1.7;color:#333;margin-top:10px;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;width:38%;">Pelanggan:</td><td style="padding:7px 0;font-weight:600;">${info.nama} <span style="font-size:12px;color:#95a5a6;">(${info.id_pelanggan || '-'})</span></td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Paket Sebelumnya:</td><td style="padding:7px 0;font-weight:600;">${info.paket_lama || '-'} <span style="color:#7f8c8d;font-weight:normal;">(${info.tarif_lama})</span></td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Paket Baru:</td><td style="padding:7px 0;font-weight:600;color:${badgeColor};">${info.paket_baru || '-'} <span style="font-weight:normal;">(${info.tarif_baru})</span></td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Selisih Nominal:</td><td style="padding:7px 0;font-weight:700;color:${badgeColor};">${info.selisih}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Tanggal Efektif:</td><td style="padding:7px 0;font-weight:600;">${info.tanggal_efektif}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Alasan / Catatan:</td><td style="padding:7px 0;">${info.alasan}</td></tr>
+                            <tr><td style="padding:7px 0;color:#7f8c8d;">Dicatat Oleh:</td><td style="padding:7px 0;color:#555;">${info.admin}</td></tr>
+                        </table>
+                    </div>
+                `,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#3498db'
+            });
+        }
         
         // --- SCRIPT UTAMA DIMODIFIKASI ---
         let currentPage = 1;

@@ -4,6 +4,7 @@ require_once __DIR__ . '/db_salam.php';
 require_once __DIR__ . '/salam_bootstrap.php';
 require_once __DIR__ . '/pelanggan_detail_helper.php';
 require_once __DIR__ . '/tagihan_periode_helper.php';
+require_once __DIR__ . '/riwayat_paket_helper.php';
 
 salamRequireLogin();
 $pppoeManualCsrf = $_SESSION['pppoe_manual_csrf'] ?? bin2hex(random_bytes(24));
@@ -36,6 +37,7 @@ if (!salamDetailPelangganTableReady($koneksi)) {
     exit('Database fitur profil pelanggan belum dipasang. Import database_update_billing_pppoe_FINAL.sql terlebih dahulu.');
 }
 $detail = salamGetPelangganDetail($koneksi, $id);
+$riwayatPaket = salamGetSemuaRiwayatPaket($koneksi, $id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     $nama = trim((string) ($_POST['nama'] ?? ''));
@@ -46,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
         ? salamNormalisasiAlamatInput($_POST['alamat'] ?? '')
         : salamWilayahLogin();
     $paket = trim((string) ($_POST['paket'] ?? ''));
+    $alasanPaket = trim((string) ($_POST['alasan_paket'] ?? ''));
+    $tanggalEfektifPaket = trim((string) ($_POST['tanggal_efektif_paket'] ?? ''));
     // Admin hanya mengisi satu nominal: Tagihan.
     // tarif_langganan tetap disimpan internal agar nominal dapat muncul lagi saat bulan baru.
     $tagihanPeriode = (float) str_replace(',', '.', (string) ($_POST['tagihan'] ?? 0));
@@ -245,9 +249,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                 $fotoFinal
             );
             salamUpdatePelangganKoordinatBilling($koneksi, $id, $koordinatX, $koordinatY);
+
+            // Pencatatan Riwayat Perubahan Paket Pelanggan (Upgrade / Downgrade / Penyesuaian Tarif)
+            $paketLama = trim((string) ($data['paket'] ?? ''));
+            $isPaketBeda = ($paket !== '' && strcasecmp($paketLama, $paket) !== 0);
+            $isTarifBeda = abs($tarif - $tarifTersimpan) > 0.01;
+            if (!$isHistorical && ($isPaketBeda || $isTarifBeda)) {
+                $tglEfektifFinal = ($tanggalEfektifPaket !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalEfektifPaket))
+                    ? $tanggalEfektifPaket
+                    : ($periodeTagihan ?: date('Y-m-d'));
+
+                salamCatatRiwayatPaket($koneksi, [
+                    'pelanggan_id' => $id,
+                    'id_pelanggan' => $idPelanggan ?: ($data['id_pelanggan'] ?? ''),
+                    'nama_pelanggan' => $nama ?: ($data['nama'] ?? ''),
+                    'paket_lama' => $paketLama ?: '-',
+                    'paket_baru' => $paket,
+                    'tarif_lama' => $tarifTersimpan,
+                    'tarif_baru' => $tarif,
+                    'tanggal_efektif' => $tglEfektifFinal,
+                    'alasan' => $alasanPaket,
+                    'admin_nama' => $_SESSION['username'] ?? 'Admin',
+                    'sumber' => 'manual',
+                ]);
+            }
+
             $koneksi->commit();
             $ok = true;
             $detail = salamGetPelangganDetail($koneksi, $id);
+            $riwayatPaket = salamGetSemuaRiwayatPaket($koneksi, $id);
             if ($fotoBaru !== null && $fotoLama !== '' && $fotoLama !== $fotoBaru) {
                 salamHapusFotoRumah($fotoLama);
             }
@@ -391,6 +421,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                     </div>
                 </div>
 
+                <?php if (!$isHistorical): ?>
+                <div id="paket-change-note-box" style="margin-top:12px;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;">
+                    <div style="font-size:12px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                        <span>📋</span> Catatan Perubahan Paket (Jika Paket / Tarif Diubah)
+                    </div>
+                    <div class="grid">
+                        <div class="col" style="flex:2;">
+                            <label class="small">Alasan / Keterangan Perubahan</label>
+                            <input type="text" name="alasan_paket" placeholder="Contoh: Upgrade kecepatan / permintaan pelanggan" value="">
+                        </div>
+                        <div class="col" style="flex:1;min-width:160px;">
+                            <label class="small">Tanggal Efektif</label>
+                            <input type="date" name="tanggal_efektif_paket" value="<?= htmlspecialchars((string) ($data['waktu'] ?? date('Y-m-d'))); ?>">
+                        </div>
+                    </div>
+                    <div class="note">Diisi jika Anda mengubah nama paket atau tarif agar riwayat perubahan (Upgrade / Downgrade) tercatat di sistem.</div>
+                </div>
+                <?php endif; ?>
+
                 <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e6eef6;">
                     <div style="font-weight:700;color:#2c3e50;margin-bottom:10px;">Data Identitas</div>
                     <div class="grid">
@@ -506,6 +555,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                         <div id="pppoe-manual-list" style="display:none;margin-top:10px;padding:10px;border:1px solid #dbe5ee;border-radius:8px;background:#fff;"></div>
                         <?php endif; ?>
                     </div>
+                </div>
+
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e6eef6;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                        <div style="font-weight:700;color:#2c3e50;font-size:14px;display:flex;align-items:center;gap:6px;">
+                            <span style="display:inline-flex;width:24px;height:24px;border-radius:6px;background:#e0f2fe;color:#0284c7;align-items:center;justify-content:center;font-size:12px;">📊</span>
+                            Riwayat Perubahan Paket (Upgrade / Downgrade)
+                        </div>
+                        <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                            <?= count($riwayatPaket); ?> Catatan
+                        </span>
+                    </div>
+
+                    <?php if (empty($riwayatPaket)): ?>
+                        <div style="padding:16px;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#94a3b8;font-size:13px;">
+                            Belum ada riwayat perubahan paket untuk pelanggan ini.
+                        </div>
+                    <?php else: ?>
+                        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;">
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+                                    <thead>
+                                        <tr style="background:#f8fafc;color:#475569;border-bottom:1px solid #e2e8f0;">
+                                            <th style="padding:8px 10px;font-weight:600;">No</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Tanggal Efektif</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Jenis</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Perubahan Paket</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Perubahan Tarif</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Selisih</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Alasan</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Dicatat Oleh</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $noR = 1; foreach ($riwayatPaket as $item):
+                                            $jenis = (string) ($item['jenis_perubahan'] ?? 'Penyesuaian Tarif');
+                                            $selisih = (float) ($item['selisih_tarif'] ?? 0);
+                                            $badgeStyle = 'background:#f1f5f9;color:#475569;';
+                                            $icon = '↔';
+                                            if ($jenis === 'Upgrade') {
+                                                $badgeStyle = 'background:#dcfce7;color:#15803d;';
+                                                $icon = '↑';
+                                            } elseif ($jenis === 'Downgrade') {
+                                                $badgeStyle = 'background:#ffedd5;color:#c2410c;';
+                                                $icon = '↓';
+                                            }
+                                            $isHistoricalRow = (($item['sumber'] ?? 'manual') === 'deteksi_historis');
+                                            $tglPerubahan = !empty($item['tanggal_perubahan']) ? salamTanggalWaktuIndonesia($item['tanggal_perubahan']) : '-';
+                                            $tglEfektif = !empty($item['tanggal_efektif']) ? salamBulananIndonesia($item['tanggal_efektif'], true) : '-';
+                                        ?>
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:8px 10px;color:#94a3b8;"><?= $noR++; ?></td>
+                                            <td style="padding:8px 10px;white-space:nowrap;">
+                                                <div style="font-weight:600;color:#1e293b;"><?= htmlspecialchars($tglEfektif); ?></div>
+                                                <?php if (!$isHistoricalRow && $tglPerubahan !== '-'): ?>
+                                                    <div style="font-size:10px;color:#94a3b8;">Dibuat: <?= htmlspecialchars($tglPerubahan); ?></div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="padding:8px 10px;white-space:nowrap;">
+                                                <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;<?= $badgeStyle; ?>">
+                                                    <?= $icon . ' ' . htmlspecialchars($jenis); ?>
+                                                </span>
+                                            </td>
+                                            <td style="padding:8px 10px;">
+                                                <div style="color:#64748b;font-size:11px;"><?= htmlspecialchars((string)$item['paket_lama']); ?></div>
+                                                <div style="font-weight:600;color:#0f172a;">➔ <?= htmlspecialchars((string)$item['paket_baru']); ?></div>
+                                            </td>
+                                            <td style="padding:8px 10px;white-space:nowrap;">
+                                                <div style="color:#64748b;font-size:11px;"><?= htmlspecialchars(salamRupiah($item['tarif_lama'] ?? 0)); ?></div>
+                                                <div style="font-weight:600;color:#0f172a;">➔ <?= htmlspecialchars(salamRupiah($item['tarif_baru'] ?? 0)); ?></div>
+                                            </td>
+                                            <td style="padding:8px 10px;white-space:nowrap;">
+                                                <?php if ($selisih > 0): ?>
+                                                    <span style="font-weight:700;color:#16a34a;">+<?= htmlspecialchars(salamRupiah($selisih)); ?></span>
+                                                <?php elseif ($selisih < 0): ?>
+                                                    <span style="font-weight:700;color:#dc2626;"><?= htmlspecialchars(salamRupiah($selisih)); ?></span>
+                                                <?php else: ?>
+                                                    <span style="color:#64748b;">Rp0</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="padding:8px 10px;max-width:220px;color:#334155;">
+                                                <?= htmlspecialchars((string)($item['alasan'] ?: '-')); ?>
+                                                <?php if ($isHistoricalRow): ?>
+                                                    <div style="font-size:10px;color:#64748b;font-style:italic;">(Deteksi Arsip Tagihan)</div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="padding:8px 10px;white-space:nowrap;color:#64748b;font-size:11px;">
+                                                <?= htmlspecialchars((string)($item['admin_nama'] ?: 'Admin')); ?>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="actions">
