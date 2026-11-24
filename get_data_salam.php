@@ -231,7 +231,7 @@ ob_start();
                 <span class="paket-badge <?= $badgeClass; ?>"
                       title="<?= esc($tooltip); ?>"
                       onclick='showPaketDetail(<?= json_encode($modalPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'>
-                    <?= $icon; ?> <?= esc($jenis); ?><small class="paket-selisih"><?= esc($selisihLabel); ?></small>
+                    <?= $icon; ?> <?= esc($jenis); ?>
                 </span>
             </div>
         <?php endif; ?>

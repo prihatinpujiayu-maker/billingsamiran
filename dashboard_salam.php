@@ -384,6 +384,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
         font-size: 11px;
         font-weight: 700;
         line-height: 1.2;
+        white-space: nowrap;
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);

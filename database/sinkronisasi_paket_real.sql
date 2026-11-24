@@ -56,12 +56,6 @@ ON DUPLICATE KEY UPDATE `id`=`id`;
 
 INSERT INTO `riwayat_paket_salam`
 (`pelanggan_id`, `id_pelanggan`, `nama_pelanggan`, `paket_lama`, `paket_baru`, `tarif_lama`, `tarif_baru`, `selisih_tarif`, `jenis_perubahan`, `tanggal_perubahan`, `tanggal_efektif`, `alasan`, `admin_nama`, `sumber`)
-SELECT p.id, 'CMN001645', p.nama, 'Paket 70K', 'Paket 100K', 70000.00, 100000.00, 30000.00, 'Upgrade', NOW(), '2026-07-01', 'Upgrade paket ke 100K (catatan billing: up 100)', 'Sistem (Data Billing)', 'deteksi_historis'
-FROM pelanggan_salam p WHERE p.id_pelanggan = 'CMN001645'
-ON DUPLICATE KEY UPDATE `id`=`id`;
-
-INSERT INTO `riwayat_paket_salam`
-(`pelanggan_id`, `id_pelanggan`, `nama_pelanggan`, `paket_lama`, `paket_baru`, `tarif_lama`, `tarif_baru`, `selisih_tarif`, `jenis_perubahan`, `tanggal_perubahan`, `tanggal_efektif`, `alasan`, `admin_nama`, `sumber`)
 SELECT p.id, 'CMN001666', p.nama, 'Paket 70K', 'Paket 100K', 70000.00, 100000.00, 30000.00, 'Upgrade', NOW(), '2026-06-01', 'Upgrade paket ke 100K (catatan billing: up100)', 'Sistem (Data Billing)', 'deteksi_historis'
 FROM pelanggan_salam p WHERE p.id_pelanggan = 'CMN001666'
 ON DUPLICATE KEY UPDATE `id`=`id`;
@@ -70,12 +64,6 @@ INSERT INTO `riwayat_paket_salam`
 (`pelanggan_id`, `id_pelanggan`, `nama_pelanggan`, `paket_lama`, `paket_baru`, `tarif_lama`, `tarif_baru`, `selisih_tarif`, `jenis_perubahan`, `tanggal_perubahan`, `tanggal_efektif`, `alasan`, `admin_nama`, `sumber`)
 SELECT p.id, 'CMN001666', p.nama, 'Paket 100K', 'Paket 70K', 100000.00, 70000.00, -30000.00, 'Downgrade', NOW(), '2026-08-01', 'Downgrade paket ke 70K (catatan billing: down 70k)', 'Sistem (Data Billing)', 'deteksi_historis'
 FROM pelanggan_salam p WHERE p.id_pelanggan = 'CMN001666'
-ON DUPLICATE KEY UPDATE `id`=`id`;
-
-INSERT INTO `riwayat_paket_salam`
-(`pelanggan_id`, `id_pelanggan`, `nama_pelanggan`, `paket_lama`, `paket_baru`, `tarif_lama`, `tarif_baru`, `selisih_tarif`, `jenis_perubahan`, `tanggal_perubahan`, `tanggal_efektif`, `alasan`, `admin_nama`, `sumber`)
-SELECT p.id, 'CMN002320', p.nama, 'Paket 70K', 'Paket 100K', 70000.00, 100000.00, 30000.00, 'Upgrade', NOW(), '2026-08-01', 'Upgrade paket ke 100K (catatan billing: up 100k)', 'Sistem (Data Billing)', 'deteksi_historis'
-FROM pelanggan_salam p WHERE p.id_pelanggan = 'CMN002320'
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 INSERT INTO `riwayat_paket_salam`
