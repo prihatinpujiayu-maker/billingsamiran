@@ -520,6 +520,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
         position: relative; 
         width: 90%; 
         max-width: 700px; /* Lebar modal bisa disesuaikan */
+        max-height: 86vh;
         background: #fff; 
         border-radius: 10px; 
         transform: translateY(12px) scale(.98); 
@@ -527,6 +528,15 @@ body.mode-biaya-instalasi #biaya-instalasi {
         transition: transform 320ms cubic-bezier(.2,.9,.2,1), opacity 260ms ease; 
         box-shadow: 0 30px 60px rgba(8,15,30,0.35); 
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    #add-modal .modal-scroll-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
     }
     #add-modal.open .modal-box { 
         transform: translateY(0) scale(1); 
@@ -2285,8 +2295,8 @@ body.mode-biaya-instalasi #biaya-instalasi {
     
         <div class="table-actions">
                 <div class="search-box" style="min-width:150px;">
-                  <select  <i class="fas fa-calendar-alt"></i>
-                     id="periode-bulan" aria-label="Bulan tagihan" style="width:100%;border:0;outline:0;background:transparent;padding:8px 4px;">
+                    <i class="fas fa-calendar-alt"></i>
+                    <select id="periode-bulan" aria-label="Bulan tagihan" style="width:100%;border:0;outline:0;background:transparent;padding:8px 4px;">
                         <?php foreach ($dashboardBulanOptions as $bulanKey => $bulanLabel): ?>
                             <option value="<?= htmlspecialchars($bulanKey); ?>" <?= $bulanKey === date('m') ? 'selected' : ''; ?>><?= htmlspecialchars($bulanLabel); ?></option>
                         <?php endforeach; ?>
@@ -2344,7 +2354,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
                             <div class="grid" style="margin-top:12px">
                                 <div class="col">
                                     <label class="small">Paket</label>
-                                    <input type="text" name="paket" placeholder="-">
+                                    <input type="text" name="paket" placeholder="">
                                 </div>
                                 <div class="col">
                                     <label class="small">Nomor WhatsApp</label>
@@ -2373,7 +2383,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
                                 </div>
                                 <div class="col">
                                     <label class="small">Tanggal Pasang</label>
-                                    <input type="text" name="tanggal_pasang" placeholder="Contoh: 6 Mei 2021 atau -">
+                                    <input type="text" name="tanggal_pasang" placeholder="">
                                 </div>
                             </div>
                             <div style="margin-top:18px;padding-top:15px;border-top:1px solid #e9eef3;">
