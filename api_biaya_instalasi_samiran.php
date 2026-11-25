@@ -34,21 +34,22 @@ $method = $_SERVER['REQUEST_METHOD'];
 // AMBIL DATA BIAYA INSTALASI
 if ($method === 'GET') {
     $sql = "
-        SELECT
-            b.id,
-            b.pelanggan_id,
-            p.id_pelanggan,
-            p.nama,
-            p.alamat,
-            b.nominal,
-            b.status_bayar,
-            b.tanggal_instalasi,
-            b.tanggal_bayar,
-            b.keterangan
-        FROM biaya_instalasi_samiran b
-        INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
-        ORDER BY b.id DESC
-    ";
+    SELECT
+        b.id,
+        b.pelanggan_id,
+        p.id_pelanggan,
+        p.nama,
+        p.alamat,
+        b.nominal,
+        b.status_bayar,
+        b.tanggal_instalasi,
+        b.tanggal_bayar,
+        b.keterangan
+    FROM biaya_instalasi_samiran b
+    INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
+    WHERE b.deleted_at IS NULL
+    ORDER BY b.id DESC
+";
 
     $result = $koneksi->query($sql);
 
@@ -61,6 +62,41 @@ if ($method === 'GET') {
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }
+    // AMBIL RIWAYAT TERHAPUS
+if (($_GET['riwayat'] ?? '') === '1') {
+    $sqlRiwayat = "
+        SELECT
+            b.id,
+            b.pelanggan_id,
+            p.id_pelanggan,
+            p.nama,
+            b.nominal,
+            b.tanggal_instalasi,
+            b.deleted_at,
+            DATEDIFF(
+                DATE_ADD(b.deleted_at, INTERVAL 30 DAY),
+                NOW()
+            ) AS sisa_hari
+        FROM biaya_instalasi_samiran b
+        INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
+        WHERE b.deleted_at IS NOT NULL
+        ORDER BY b.deleted_at DESC
+    ";
+
+    $resultRiwayat = $koneksi->query($sqlRiwayat);
+
+    if (!$resultRiwayat) {
+        kirimJson(false, 'Gagal mengambil riwayat: ' . $koneksi->error);
+    }
+
+    $riwayat = [];
+
+    while ($rowRiwayat = $resultRiwayat->fetch_assoc()) {
+        $riwayat[] = $rowRiwayat;
+    }
+
+    kirimJson(true, 'Riwayat terhapus berhasil diambil.', $riwayat);
+}
 
     kirimJson(true, 'Data berhasil diambil.', $data);
 }
@@ -120,11 +156,12 @@ if ($method === 'POST') {
                  tanggal_instalasi, tanggal_bayar, keterangan)
             VALUES (?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                nominal = VALUES(nominal),
-                status_bayar = VALUES(status_bayar),
-                tanggal_instalasi = VALUES(tanggal_instalasi),
-                tanggal_bayar = VALUES(tanggal_bayar),
-                keterangan = VALUES(keterangan)
+                 nominal = VALUES(nominal),
+                 status_bayar = VALUES(status_bayar),
+                 tanggal_instalasi = VALUES(tanggal_instalasi),
+                 tanggal_bayar = VALUES(tanggal_bayar),
+                 keterangan = VALUES(keterangan),
+                 deleted_at = NULL
         ";
 
         $stmt = $koneksi->prepare($sql);
@@ -148,9 +185,83 @@ if ($method === 'POST') {
         }
 
         $stmt->close();
-        kirimJson(true, 'Biaya instalasi berhasil disimpan.');
+kirimJson(true, 'Biaya instalasi berhasil disimpan.');
+}
+
+if ($action === 'edit') {
+    $id = (int) ($_POST['id'] ?? 0);
+    $pelangganId = (int) ($_POST['pelanggan_id'] ?? 0);
+    $nominal = (float) ($_POST['nominal'] ?? 0);
+    $status = $_POST['status_bayar'] ?? 'Belum Lunas';
+    $tanggalInstalasi = trim($_POST['tanggal_instalasi'] ?? '');
+    $tanggalBayar = trim($_POST['tanggal_bayar'] ?? '');
+    $keterangan = trim($_POST['keterangan'] ?? '');
+
+    if ($id <= 0 || $pelangganId <= 0 || $nominal <= 0) {
+        kirimJson(false, 'Data ID, pelanggan, dan nominal wajib diisi.');
     }
 
+    if (!in_array($status, ['Lunas', 'Belum Lunas'], true)) {
+        kirimJson(false, 'Status pembayaran tidak valid.');
+    }
+
+    if (!tanggalValid($tanggalInstalasi) || !tanggalValid($tanggalBayar)) {
+        kirimJson(false, 'Format tanggal tidak valid.');
+    }
+
+    if ($tanggalInstalasi === '') {
+        $tanggalInstalasi = null;
+    }
+
+    if ($status === 'Lunas') {
+        if ($tanggalBayar === '') {
+            $tanggalBayar = date('Y-m-d');
+        }
+    } else {
+        $tanggalBayar = null;
+    }
+
+    $sql = "
+        UPDATE biaya_instalasi_samiran
+        SET pelanggan_id = ?,
+            nominal = ?,
+            status_bayar = ?,
+            tanggal_instalasi = ?,
+            tanggal_bayar = ?,
+            keterangan = ?
+        WHERE id = ? AND deleted_at IS NULL
+    ";
+
+    $stmt = $koneksi->prepare($sql);
+
+    if (!$stmt) {
+        kirimJson(false, 'Gagal menyiapkan perubahan data.');
+    }
+
+    $stmt->bind_param(
+        'idssssi',
+        $pelangganId,
+        $nominal,
+        $status,
+        $tanggalInstalasi,
+        $tanggalBayar,
+        $keterangan,
+        $id
+    );
+
+    if (!$stmt->execute()) {
+        kirimJson(false, 'Gagal mengubah data: ' . $stmt->error);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        $stmt->close();
+        kirimJson(false, 'Data tidak ditemukan atau tidak mengalami perubahan.');
+    }
+
+    $stmt->close();
+    kirimJson(true, 'Data biaya instalasi berhasil diperbarui.');
+}
+   
     // UBAH STATUS PEMBAYARAN
     if ($action === 'ubah_status') {
         $id = (int) ($_POST['id'] ?? 0);
@@ -201,7 +312,78 @@ if ($method === 'POST') {
         kirimJson(true, 'Status pembayaran berhasil diperbarui.');
     }
 
-    kirimJson(false, 'Perintah tidak dikenal.');
+    // HAPUS BIAYA INSTALASI
+   if ($action === 'hapus') {
+    $id = (int) ($_POST['id'] ?? 0);
+
+    if ($id <= 0) {
+        kirimJson(false, 'ID biaya instalasi tidak valid.');
+    }
+
+    $stmt = $koneksi->prepare(
+        "UPDATE biaya_instalasi_samiran
+         SET deleted_at = NOW()
+         WHERE id = ? AND deleted_at IS NULL"
+    );
+
+    if (!$stmt) {
+        kirimJson(false, 'Gagal menyiapkan penghapusan data.');
+    }
+
+    $stmt->bind_param('i', $id);
+
+    if (!$stmt->execute()) {
+        kirimJson(false, 'Gagal menghapus data: ' . $stmt->error);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        $stmt->close();
+        kirimJson(false, 'Data biaya instalasi tidak ditemukan.');
+    }
+
+    $stmt->close();
+
+    kirimJson(true, 'Data berhasil dipindahkan ke Riwayat Terhapus.');
+}
+
+
+// TAMBAHKAN FUNGSI PULIHKAN DI SINI
+if ($action === 'pulihkan') {
+    $id = (int) ($_POST['id'] ?? 0);
+
+    if ($id <= 0) {
+        kirimJson(false, 'ID biaya instalasi tidak valid.');
+    }
+
+    $stmt = $koneksi->prepare(
+        "UPDATE biaya_instalasi_samiran
+         SET deleted_at = NULL
+         WHERE id = ? AND deleted_at IS NOT NULL"
+    );
+
+    if (!$stmt) {
+        kirimJson(false, 'Gagal menyiapkan pemulihan data.');
+    }
+
+    $stmt->bind_param('i', $id);
+
+    if (!$stmt->execute()) {
+        kirimJson(false, 'Gagal memulihkan data: ' . $stmt->error);
+    }
+
+    if ($stmt->affected_rows === 0) {
+        $stmt->close();
+        kirimJson(false, 'Data tidak ditemukan atau sudah dipulihkan.');
+    }
+
+    $stmt->close();
+
+    kirimJson(true, 'Data biaya instalasi berhasil dipulihkan.');
+}
+
+
+kirimJson(false, 'Perintah tidak dikenal.');
+
 }
 
 kirimJson(false, 'Metode permintaan tidak diizinkan.');
