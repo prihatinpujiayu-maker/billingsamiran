@@ -382,3 +382,116 @@ function salamGetLatestPaketStatusMap(mysqli $koneksi, array $pelangganIds): arr
     return $map;
 }
 
+/**
+ * Mengambil satu catatan riwayat paket berdasarkan ID primer.
+ */
+function salamGetRiwayatPaketById(mysqli $koneksi, int $id): ?array
+{
+    if ($id <= 0 || !salamRiwayatPaketTableReady($koneksi)) {
+        return null;
+    }
+
+    $stmt = $koneksi->prepare("SELECT * FROM `riwayat_paket_salam` WHERE `id` = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+
+    return $row ?: null;
+}
+
+/**
+ * Memperbarui catatan riwayat paket yang sudah ada berdasarkan ID.
+ */
+function salamUpdateRiwayatPaket(mysqli $koneksi, int $id, array $data): bool
+{
+    if ($id <= 0 || !salamRiwayatPaketTableReady($koneksi)) {
+        return false;
+    }
+
+    $existing = salamGetRiwayatPaketById($koneksi, $id);
+    if (!$existing) {
+        return false;
+    }
+
+    $paketLama = trim((string) ($data['paket_lama'] ?? $existing['paket_lama']));
+    $paketBaru = trim((string) ($data['paket_baru'] ?? $existing['paket_baru']));
+    $tarifLama = isset($data['tarif_lama']) ? (float) $data['tarif_lama'] : (float) $existing['tarif_lama'];
+    $tarifBaru = isset($data['tarif_baru']) ? (float) $data['tarif_baru'] : (float) $existing['tarif_baru'];
+    $selisihTarif = $tarifBaru - $tarifLama;
+
+    $jenisPerubahan = trim((string) ($data['jenis_perubahan'] ?? ''));
+    if (!in_array($jenisPerubahan, ['Upgrade', 'Downgrade', 'Penyesuaian Tarif'], true)) {
+        $jenisPerubahan = salamTentukanJenisPerubahan($tarifLama, $tarifBaru);
+    }
+
+    $tanggalEfektif = trim((string) ($data['tanggal_efektif'] ?? $existing['tanggal_efektif']));
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalEfektif)) {
+        $tanggalEfektif = (string) $existing['tanggal_efektif'];
+    }
+
+    $alasan = isset($data['alasan']) ? trim((string) $data['alasan']) : (string) $existing['alasan'];
+    $adminNama = trim((string) ($data['admin_nama'] ?? ($_SESSION['username'] ?? ($existing['admin_nama'] ?: 'Admin'))));
+
+    $stmt = $koneksi->prepare(
+        "UPDATE `riwayat_paket_salam`
+         SET `paket_lama` = ?, `paket_baru` = ?, `tarif_lama` = ?, `tarif_baru` = ?,
+             `selisih_tarif` = ?, `jenis_perubahan` = ?, `tanggal_efektif` = ?,
+             `alasan` = ?, `admin_nama` = ?
+         WHERE `id` = ?"
+    );
+
+    if (!$stmt) {
+        error_log('Prepare salamUpdateRiwayatPaket gagal: ' . $koneksi->error);
+        return false;
+    }
+
+    $stmt->bind_param(
+        'ssdddssssi',
+        $paketLama,
+        $paketBaru,
+        $tarifLama,
+        $tarifBaru,
+        $selisihTarif,
+        $jenisPerubahan,
+        $tanggalEfektif,
+        $alasan,
+        $adminNama,
+        $id
+    );
+
+    $ok = $stmt->execute();
+    if (!$ok) {
+        error_log('Execute salamUpdateRiwayatPaket gagal: ' . $stmt->error);
+    }
+    $stmt->close();
+
+    return $ok;
+}
+
+/**
+ * Menghapus satu catatan riwayat paket berdasarkan ID.
+ */
+function salamHapusRiwayatPaket(mysqli $koneksi, int $id): bool
+{
+    if ($id <= 0 || !salamRiwayatPaketTableReady($koneksi)) {
+        return false;
+    }
+
+    $stmt = $koneksi->prepare("DELETE FROM `riwayat_paket_salam` WHERE `id` = ?");
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param('i', $id);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    return $ok;
+}
+

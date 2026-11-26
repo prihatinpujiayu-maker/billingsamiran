@@ -27,4 +27,4 @@ $koneksi->query("SET time_zone = '+07:00'");
 // walaupun MySQL Event Scheduler sedang mati.
 require_once __DIR__ . '/tagihan_bulanan_otomatis.php';
 salamPastikanTagihanBulanBerjalan($koneksi);
-?> 
+?>
