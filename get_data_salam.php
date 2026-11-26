@@ -7,6 +7,7 @@ require_once __DIR__ . '/helpers_salam.php';
 require_once __DIR__ . '/config_salam.php';
 require_once __DIR__ . '/tagihan_periode_helper.php';
 require_once __DIR__ . '/riwayat_paket_helper.php';
+require_once __DIR__ . '/diskon_helper.php';
 header('Content-Type: application/json; charset=utf-8');
 salamRequireLogin();
 
@@ -81,7 +82,25 @@ if (salamCanAccessAllWilayah() && $wilayahFilter !== '' && strtolower($wilayahFi
 }
 if ($search !== '') {
     $escaped = $koneksi->real_escape_string($search);
-    $conditions[] = "(LOWER(q.nama) LIKE LOWER('%{$escaped}%') OR SOUNDEX(q.nama)=SOUNDEX('{$escaped}') OR q.id_pelanggan LIKE '%{$escaped}%' OR q.nomor_pelanggan LIKE '%{$escaped}%' OR q.paket LIKE '%{$escaped}%' OR q.alamat LIKE '%{$escaped}%')";
+    $conditions[] = "(
+        LOWER(q.nama) LIKE LOWER('%{$escaped}%') 
+        OR SOUNDEX(q.nama)=SOUNDEX('{$escaped}') 
+        OR q.id_pelanggan LIKE '%{$escaped}%' 
+        OR q.nomor_pelanggan LIKE '%{$escaped}%' 
+        OR q.paket LIKE '%{$escaped}%' 
+        OR q.alamat LIKE '%{$escaped}%'
+        OR EXISTS (
+            SELECT 1 FROM diskon_pelanggan_salam dps 
+            WHERE dps.pelanggan_id = q.pelanggan_id 
+              AND dps.periode = '{$periodeEsc}' 
+              AND (dps.keterangan LIKE '%{$escaped}%' OR 'diskon' LIKE '%{$escaped}%' OR 'disk' LIKE '%{$escaped}%')
+        )
+        OR EXISTS (
+            SELECT 1 FROM riwayat_paket_salam rps 
+            WHERE rps.pelanggan_id = q.pelanggan_id 
+              AND (rps.jenis_perubahan LIKE '%{$escaped}%' OR rps.alasan LIKE '%{$escaped}%' OR 'upgrade' LIKE '%{$escaped}%' OR 'downgrade' LIKE '%{$escaped}%')
+        )
+    )";
 }
 if ($filter === 'lunas') {
     $conditions[] = "q.status_bayar='Lunas'";
@@ -91,6 +110,12 @@ if ($filter === 'lunas') {
     $conditions[] = "q.status_pelanggan='Aktif'";
 } elseif ($filter === 'tidak aktif') {
     $conditions[] = "q.status_pelanggan='Tidak Aktif'";
+} elseif ($filter === 'diskon') {
+    $conditions[] = "EXISTS (SELECT 1 FROM diskon_pelanggan_salam dps WHERE dps.pelanggan_id = q.pelanggan_id AND dps.periode = '{$periodeEsc}')";
+} elseif ($filter === 'upgrade') {
+    $conditions[] = "EXISTS (SELECT 1 FROM riwayat_paket_salam rps WHERE rps.pelanggan_id = q.pelanggan_id AND rps.jenis_perubahan = 'Upgrade')";
+} elseif ($filter === 'downgrade') {
+    $conditions[] = "EXISTS (SELECT 1 FROM riwayat_paket_salam rps WHERE rps.pelanggan_id = q.pelanggan_id AND rps.jenis_perubahan = 'Downgrade')";
 }
 $where = ' WHERE ' . implode(' AND ', $conditions);
 
@@ -111,6 +136,7 @@ if ($result instanceof mysqli_result && $result->num_rows > 0) {
     }
 }
 $paketStatusMap = salamGetLatestPaketStatusMap($koneksi, $pagePelangganIds);
+$diskonMap = salamGetDiskonPeriodeMap($koneksi, $pagePelangganIds, $periode);
 
 function esc($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function salamPesanTagihanPeriode(array $row): string {
@@ -170,6 +196,7 @@ ob_start();
 <?php $no = $offset + 1; foreach ($pageRows as $row):
     $pelangganId = (int) ($row['pelanggan_id'] ?? $row['id']);
     $changeInfo = $paketStatusMap[$pelangganId] ?? null;
+    $diskonInfo = $diskonMap[$pelangganId] ?? null;
     $wa = salamNormalisasiWhatsApp($row['nomor_pelanggan'] ?? '');
     $statusPelanggan = ($row['status_pelanggan'] ?? 'Aktif') === 'Tidak Aktif' ? 'Tidak Aktif' : 'Aktif';
     $statusBayar = ($row['status_bayar'] ?? 'Belum Lunas') === 'Lunas' ? 'Lunas' : 'Belum Lunas';
@@ -235,11 +262,42 @@ ob_start();
                 </span>
             </div>
         <?php endif; ?>
+        <?php if ($diskonInfo): ?>
+            <?php
+            $nomDisk = (float) ($diskonInfo['nominal_diskon'] ?? 0);
+            $labelDisk = (string) ($diskonInfo['label_singkat'] ?: 'Diskon');
+            $modalDiskonPayload = [
+                'nama' => (string) ($row['nama'] ?? '-'),
+                'id_pelanggan' => (string) ($row['id_pelanggan'] ?? '-'),
+                'periode' => salamBulananIndonesia($periode . '-01', false),
+                'tarif_normal' => salamRupiah((float) ($diskonInfo['tarif_normal'] ?? 0)),
+                'nominal_diskon' => salamRupiah($nomDisk),
+                'tarif_setelah' => salamRupiah((float) ($diskonInfo['tarif_setelah_diskon'] ?? 0)),
+                'keterangan' => (string) ($diskonInfo['keterangan'] ?: '-'),
+                'admin' => (string) ($diskonInfo['admin_nama'] ?: 'Sistem (Data Billing)')
+            ];
+            $tooltipDisk = "Diskon " . ($nomDisk > 0 ? salamRupiah($nomDisk) : $labelDisk) . " | Periode: " . salamBulananIndonesia($periode . '-01', false) . (!empty($diskonInfo['keterangan']) ? " (" . $diskonInfo['keterangan'] . ")" : "");
+            ?>
+            <div class="paket-badge-wrapper">
+                <span class="paket-badge badge-diskon"
+                      title="<?= esc($tooltipDisk); ?>"
+                      onclick='showDiskonDetail(<?= json_encode($modalDiskonPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)'>
+                    🏷️ Diskon <?= esc($labelDisk); ?>
+                </span>
+            </div>
+        <?php endif; ?>
     </div>
 </td>
 <td class="muted"><?= esc(salamBulananIndonesia($row['langganan_selesai'] ?? null, true)); ?></td>
 <td><?= esc(salamBulananIndonesia($row['waktu'] ?? null, false)); ?></td>
-<td><strong><?= esc(salamRupiah($row['tagihan'] ?? 0)); ?></strong></td>
+<td>
+    <strong><?= esc(salamRupiah($row['tagihan'] ?? 0)); ?></strong>
+    <?php if ($diskonInfo && (float)$diskonInfo['nominal_diskon'] > 0): ?>
+        <small class="tagihan-diskon-note" title="Mendapat potongan harga <?= esc(salamRupiah((float)$diskonInfo['nominal_diskon'])); ?> (<?= esc($diskonInfo['keterangan']); ?>)">
+            Potongan -<?= esc(salamRupiah((float)$diskonInfo['nominal_diskon'])); ?>
+        </small>
+    <?php endif; ?>
+</td>
 <td><span class="badge <?= $statusBayar === 'Lunas' ? 'badge-success' : 'badge-danger'; ?>" onclick="updateStatus(<?= $pelangganId; ?>, '<?= $statusBayar; ?>', '<?= esc($rowPeriode); ?>')" title="Klik untuk ubah status periode <?= esc($rowPeriode); ?>"><?= esc($statusBayar); ?></span></td>
 <td class="actions-cell"><div class="action-row">
 <?php if ($wa !== ''): ?>

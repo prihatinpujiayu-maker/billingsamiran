@@ -44,10 +44,22 @@ $periodScope = implode(' AND ', $periodScopeConditions);
 $lunas = (int) ($koneksi->query("SELECT COUNT(*) total FROM ({$sourceSql}) q WHERE {$periodScope} AND q.status_bayar='Lunas'")?->fetch_assoc()['total'] ?? 0);
 $belum = (int) ($koneksi->query("SELECT COUNT(*) total FROM ({$sourceSql}) q WHERE {$periodScope} AND q.status_bayar='Belum Lunas'")?->fetch_assoc()['total'] ?? 0);
 
+require_once __DIR__ . '/diskon_helper.php';
+$diskonCount = 0;
+if (salamDiskonTableReady($koneksi)) {
+    $diskonCount = (int) ($koneksi->query("
+        SELECT COUNT(DISTINCT dps.pelanggan_id) total
+        FROM diskon_pelanggan_salam dps
+        INNER JOIN ({$sourceSql}) q ON q.pelanggan_id = dps.pelanggan_id
+        WHERE {$periodScope} AND dps.periode = '{$periodeEsc}'
+    ")?->fetch_assoc()['total'] ?? 0);
+}
+
 $koneksi->close();
 echo json_encode([
     'total_pelanggan' => $total,
     'lunas_bulan_ini' => $lunas,
     'belum_lunas_bulan_ini' => $belum,
+    'total_diskon' => $diskonCount,
     'periode' => $periode,
 ]);

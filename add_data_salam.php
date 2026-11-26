@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/db_salam.php';
 require_once __DIR__ . '/helpers_salam.php';
 require_once __DIR__ . '/pelanggan_detail_helper.php';
+require_once __DIR__ . '/diskon_helper.php';
 header('Content-Type: application/json; charset=utf-8');
 salamRequireLogin();
 
@@ -24,6 +25,9 @@ $alamat = salamCanAccessAllWilayah()
     ? salamNormalisasiAlamatInput($_POST['alamat'] ?? '')
     : salamWilayahLogin();
 $tarif = (float) str_replace(',', '.', (string) ($_POST['tagihan'] ?? 0));
+$nominalDiskonInput = isset($_POST['nominal_diskon']) ? (float) str_replace(',', '.', (string) $_POST['nominal_diskon']) : 0.0;
+$keteranganDiskonInput = trim((string) ($_POST['keterangan_diskon'] ?? ''));
+$tagihanAwal = $nominalDiskonInput > 0 ? max(0, $tarif - $nominalDiskonInput) : $tarif;
 $namaKtp = trim((string) ($_POST['nama_ktp'] ?? ''));
 $nik = preg_replace('/\s+/', '', trim((string) ($_POST['nik'] ?? ''))) ?? '';
 try {
@@ -61,7 +65,7 @@ $fotoBaru = null;
 $koneksi->begin_transaction();
 try {
     $stmt = $koneksi->prepare('INSERT INTO pelanggan_salam (id_pelanggan, kode_pelanggan, nama, nomor_pelanggan, alamat, tanggal_pasang, paket, tarif_langganan, tagihan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->bind_param('sssssssdd', $idPelanggan, $kodePelanggan, $nama, $nomor, $alamat, $tanggalPasang, $paket, $tarif, $tarif);
+    $stmt->bind_param('sssssssdd', $idPelanggan, $kodePelanggan, $nama, $nomor, $alamat, $tanggalPasang, $paket, $tarif, $tagihanAwal);
     if (!$stmt->execute()) {
         throw new RuntimeException('Gagal menyimpan pelanggan: ' . $stmt->error);
     }
@@ -77,6 +81,22 @@ try {
         throw new RuntimeException('Gagal melengkapi ID pelanggan: ' . $fix->error);
     }
     $fix->close();
+
+    // Catat diskon jika ada input diskon
+    if ($nominalDiskonInput > 0 || $keteranganDiskonInput !== '') {
+        salamCatatDiskonPelanggan($koneksi, [
+            'pelanggan_id' => $id,
+            'id_pelanggan' => $generatedId,
+            'nama_pelanggan' => $nama,
+            'periode' => date('Y-m'),
+            'nominal_diskon' => $nominalDiskonInput,
+            'keterangan' => $keteranganDiskonInput,
+            'tarif_normal' => $tarif,
+            'tarif_setelah_diskon' => $tagihanAwal,
+            'admin_nama' => $_SESSION['username'] ?? 'Admin',
+            'sumber' => 'manual',
+        ]);
+    }
 
     $fotoBaru = salamFotoRumahUpload($_FILES['foto_rumah'] ?? [], $generatedId);
     salamUpsertPelangganDetailBilling(

@@ -25,8 +25,17 @@ function kirimJsonRiwayat(bool $success, string $message = '', array $data = [])
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// GET: Ambil daftar riwayat perubahan paket pelanggan
+// GET: Ambil daftar riwayat perubahan paket pelanggan atau detail single item
 if ($method === 'GET') {
+    $singleId = (int) ($_GET['id'] ?? 0);
+    if ($singleId > 0) {
+        $item = salamGetRiwayatPaketById($koneksi, $singleId);
+        if (!$item) {
+            kirimJsonRiwayat(false, 'Catatan riwayat paket tidak ditemukan.');
+        }
+        kirimJsonRiwayat(true, 'Detail riwayat paket berhasil diambil.', $item);
+    }
+
     $pelangganId = (int) ($_GET['pelanggan_id'] ?? 0);
     if ($pelangganId <= 0) {
         kirimJsonRiwayat(false, 'Parameter pelanggan_id wajib diisi.');
@@ -75,13 +84,65 @@ if ($method === 'GET') {
     kirimJsonRiwayat(true, 'Riwayat perubahan paket berhasil diambil.', $formatted);
 }
 
-// POST: Tambah catatan perubahan paket (misal dari form modal mandiri)
+// POST: Tambah, Perbarui (Edit), atau Hapus catatan perubahan paket
 if ($method === 'POST') {
     $input = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($input)) {
         $input = $_POST;
     }
 
+    $action = trim((string) ($input['action'] ?? ''));
+    $id = (int) ($input['id'] ?? 0);
+
+    // 1. AKSI HAPUS (DELETE)
+    if ($action === 'delete') {
+        if ($id <= 0) {
+            kirimJsonRiwayat(false, 'ID catatan riwayat tidak valid.');
+        }
+
+        $existing = salamGetRiwayatPaketById($koneksi, $id);
+        if (!$existing) {
+            kirimJsonRiwayat(false, 'Catatan riwayat tidak ditemukan atau sudah dihapus.');
+        }
+
+        $ok = salamHapusRiwayatPaket($koneksi, $id);
+        if ($ok) {
+            kirimJsonRiwayat(true, 'Catatan riwayat perubahan paket berhasil dihapus.');
+        } else {
+            kirimJsonRiwayat(false, 'Gagal menghapus catatan riwayat perubahan paket.');
+        }
+    }
+
+    // 2. AKSI PERBARUI / EDIT (UPDATE)
+    if ($action === 'update' || ($id > 0 && ($action === 'edit' || $action === 'save'))) {
+        if ($id <= 0) {
+            kirimJsonRiwayat(false, 'ID catatan riwayat wajib disertakan untuk pembaruan.');
+        }
+
+        $existing = salamGetRiwayatPaketById($koneksi, $id);
+        if (!$existing) {
+            kirimJsonRiwayat(false, 'Catatan riwayat tidak ditemukan.');
+        }
+
+        $ok = salamUpdateRiwayatPaket($koneksi, $id, [
+            'paket_lama' => trim((string) ($input['paket_lama'] ?? $existing['paket_lama'])),
+            'paket_baru' => trim((string) ($input['paket_baru'] ?? $existing['paket_baru'])),
+            'tarif_lama' => isset($input['tarif_lama']) ? (float) $input['tarif_lama'] : (float) $existing['tarif_lama'],
+            'tarif_baru' => isset($input['tarif_baru']) ? (float) $input['tarif_baru'] : (float) $existing['tarif_baru'],
+            'jenis_perubahan' => trim((string) ($input['jenis_perubahan'] ?? '')),
+            'tanggal_efektif' => trim((string) ($input['tanggal_efektif'] ?? $existing['tanggal_efektif'])),
+            'alasan' => trim((string) ($input['alasan'] ?? $existing['alasan'])),
+            'admin_nama' => (string) ($_SESSION['username'] ?? 'Admin'),
+        ]);
+
+        if ($ok) {
+            kirimJsonRiwayat(true, 'Catatan riwayat perubahan paket berhasil diperbarui.');
+        } else {
+            kirimJsonRiwayat(false, 'Gagal memperbarui catatan riwayat perubahan paket.');
+        }
+    }
+
+    // 3. AKSI TAMBAH BARU (CREATE)
     $pelangganId = (int) ($input['pelanggan_id'] ?? 0);
     $paketLama = trim((string) ($input['paket_lama'] ?? ''));
     $paketBaru = trim((string) ($input['paket_baru'] ?? ''));
@@ -89,6 +150,7 @@ if ($method === 'POST') {
     $tarifBaru = (float) ($input['tarif_baru'] ?? 0);
     $tanggalEfektif = trim((string) ($input['tanggal_efektif'] ?? date('Y-m-d')));
     $alasan = trim((string) ($input['alasan'] ?? ''));
+    $jenisPerubahan = trim((string) ($input['jenis_perubahan'] ?? ''));
 
     if ($pelangganId <= 0 || $paketBaru === '') {
         kirimJsonRiwayat(false, 'Parameter pelanggan_id dan paket_baru wajib diisi.');
@@ -107,6 +169,7 @@ if ($method === 'POST') {
         'paket_baru' => $paketBaru,
         'tarif_lama' => $tarifLama > 0 ? $tarifLama : (float) ($pelanggan['tarif_langganan'] ?? 0),
         'tarif_baru' => $tarifBaru > 0 ? $tarifBaru : (float) ($pelanggan['tarif_langganan'] ?? 0),
+        'jenis_perubahan' => $jenisPerubahan ?: null,
         'tanggal_efektif' => $tanggalEfektif,
         'alasan' => $alasan,
         'admin_nama' => (string) ($_SESSION['username'] ?? 'Admin'),
@@ -114,7 +177,7 @@ if ($method === 'POST') {
     ]);
 
     if ($ok) {
-        kirimJsonRiwayat(true, 'Riwayat perubahan paket berhasil disimpan.');
+        kirimJsonRiwayat(true, 'Catatan riwayat perubahan paket berhasil disimpan.');
     } else {
         kirimJsonRiwayat(false, 'Gagal menyimpan riwayat perubahan paket.');
     }

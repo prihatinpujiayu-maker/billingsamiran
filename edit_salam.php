@@ -5,6 +5,7 @@ require_once __DIR__ . '/salam_bootstrap.php';
 require_once __DIR__ . '/pelanggan_detail_helper.php';
 require_once __DIR__ . '/tagihan_periode_helper.php';
 require_once __DIR__ . '/riwayat_paket_helper.php';
+require_once __DIR__ . '/diskon_helper.php';
 
 salamRequireLogin();
 $pppoeManualCsrf = $_SESSION['pppoe_manual_csrf'] ?? bin2hex(random_bytes(24));
@@ -38,6 +39,17 @@ if (!salamDetailPelangganTableReady($koneksi)) {
 }
 $detail = salamGetPelangganDetail($koneksi, $id);
 $riwayatPaket = salamGetSemuaRiwayatPaket($koneksi, $id);
+$riwayatDiskon = salamGetSemuaDiskonPelanggan($koneksi, $id);
+
+$requestedYm = salamPeriodeYm($requestedPeriode ?? ($data['waktu'] ?? date('Y-m')));
+$stmtCurDisk = $koneksi->prepare("SELECT * FROM diskon_pelanggan_salam WHERE pelanggan_id = ? AND periode = ? LIMIT 1");
+$diskonPeriodeIni = null;
+if ($stmtCurDisk) {
+    $stmtCurDisk->bind_param('is', $id, $requestedYm);
+    $stmtCurDisk->execute();
+    $diskonPeriodeIni = $stmtCurDisk->get_result()->fetch_assoc();
+    $stmtCurDisk->close();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     $nama = trim((string) ($_POST['nama'] ?? ''));
@@ -53,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     // Admin hanya mengisi satu nominal: Tagihan.
     // tarif_langganan tetap disimpan internal agar nominal dapat muncul lagi saat bulan baru.
     $tagihanPeriode = (float) str_replace(',', '.', (string) ($_POST['tagihan'] ?? 0));
+    $nominalDiskonInput = isset($_POST['nominal_diskon']) ? (float) str_replace(',', '.', (string) $_POST['nominal_diskon']) : 0.0;
+    $keteranganDiskonInput = trim((string) ($_POST['keterangan_diskon'] ?? ''));
     $tarifTersimpan = (float) ($data['tarif_langganan'] ?? 0);
     if ($tarifTersimpan <= 0) {
         $tarifTersimpan = (float) ($data['tagihan'] ?? 0);
@@ -274,10 +288,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                 ]);
             }
 
+            // Pencatatan / Pembaruan Diskon Pelanggan
+            $periodeYmFinal = salamPeriodeYm($periodeTagihan ?: ($requestedPeriode ?: date('Y-m')));
+            if ($nominalDiskonInput > 0 || $keteranganDiskonInput !== '') {
+                $tarifNormalDiskon = $tarifTersimpan > 0 ? $tarifTersimpan : $tarif;
+                salamCatatDiskonPelanggan($koneksi, [
+                    'pelanggan_id' => $id,
+                    'id_pelanggan' => $idPelanggan ?: ($data['id_pelanggan'] ?? ''),
+                    'nama_pelanggan' => $nama ?: ($data['nama'] ?? ''),
+                    'periode' => $periodeYmFinal,
+                    'nominal_diskon' => $nominalDiskonInput,
+                    'keterangan' => $keteranganDiskonInput,
+                    'tarif_normal' => $tarifNormalDiskon,
+                    'tarif_setelah_diskon' => max(0, $tarifNormalDiskon - $nominalDiskonInput),
+                    'admin_nama' => $_SESSION['username'] ?? 'Admin',
+                    'sumber' => 'manual',
+                ]);
+            } elseif (isset($_POST['nominal_diskon']) && $nominalDiskonInput == 0 && $keteranganDiskonInput === '') {
+                $delDisk = $koneksi->prepare("DELETE FROM diskon_pelanggan_salam WHERE pelanggan_id = ? AND periode = ?");
+                if ($delDisk) {
+                    $delDisk->bind_param('is', $id, $periodeYmFinal);
+                    $delDisk->execute();
+                    $delDisk->close();
+                }
+            }
+
             $koneksi->commit();
             $ok = true;
             $detail = salamGetPelangganDetail($koneksi, $id);
             $riwayatPaket = salamGetSemuaRiwayatPaket($koneksi, $id);
+            $riwayatDiskon = salamGetSemuaDiskonPelanggan($koneksi, $id);
             if ($fotoBaru !== null && $fotoLama !== '' && $fotoLama !== $fotoBaru) {
                 salamHapusFotoRumah($fotoLama);
             }
@@ -523,6 +563,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                     </div>
                 </div>
 
+                <div class="grid" style="margin-top:12px;background:#faf5ff;padding:12px;border-radius:8px;border:1px solid #f3e8ff;">
+                    <div class="col">
+                        <label class="small" style="font-weight:700;color:#6b21a8;display:flex;align-items:center;gap:4px;">
+                            <span>🏷️ Potongan Diskon (Rp)</span>
+                            <span style="font-weight:400;color:#9333ea;font-size:11px;">(Kasus khusus potongan tagihan)</span>
+                        </label>
+                        <input type="number" id="nominal_diskon" name="nominal_diskon" 
+                               value="<?= htmlspecialchars((string) ($diskonPeriodeIni['nominal_diskon'] ?? '')); ?>" 
+                               min="0" step="1000" placeholder="0" style="border-color:#d8b4fe;">
+                    </div>
+                    <div class="col">
+                        <label class="small" style="font-weight:700;color:#6b21a8;">Keterangan / Alasan Diskon</label>
+                        <input type="text" name="keterangan_diskon" id="keterangan_diskon" 
+                               value="<?= htmlspecialchars((string) ($diskonPeriodeIni['keterangan'] ?? '')); ?>" 
+                               placeholder="Contoh: disk 20k / Promo khusus / Keringanan" style="border-color:#d8b4fe;">
+                    </div>
+                    <div class="col-12 note" style="color:#7e22ce;margin-top:6px;width:100%;">
+                        <i class="fas fa-info-circle"></i> <strong>Catatan Diskon:</strong> Diskon memotong nominal tagihan pada periode ini tanpa mengubah paket langganan dasar (berbeda dari upgrade/downgrade).
+                    </div>
+                </div>
+
                 </div>
 
                 <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e6eef6;">
@@ -653,6 +714,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                     <?php endif; ?>
                 </div>
 
+                <!-- Riwayat Diskon Pelanggan -->
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e6eef6;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                        <div style="font-weight:700;color:#2c3e50;font-size:14px;display:flex;align-items:center;gap:6px;">
+                            <span style="display:inline-flex;width:24px;height:24px;border-radius:6px;background:#f3e8ff;color:#7e22ce;align-items:center;justify-content:center;font-size:12px;">🏷️</span>
+                            Riwayat Diskon Pelanggan
+                        </div>
+                        <span style="background:#f3e8ff;color:#6b21a8;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                            <?= count($riwayatDiskon); ?> Catatan Diskon
+                        </span>
+                    </div>
+
+                    <?php if (empty($riwayatDiskon)): ?>
+                        <div style="padding:16px;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#94a3b8;font-size:13px;">
+                            Belum ada riwayat diskon khusus untuk pelanggan ini (tagihan berjalan normal sesuai paket).
+                        </div>
+                    <?php else: ?>
+                        <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;">
+                            <div style="padding:9px 12px;background:#faf5ff;border-bottom:1px solid #f3e8ff;font-size:12px;color:#6b21a8;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-info-circle"></i>
+                                <span><strong>Kasus Khusus Diskon:</strong> Diskon memotong nominal tagihan pada periode tertentu dan <u>terpisah</u> dari perubahan paket (upgrade/downgrade).</span>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+                                    <thead>
+                                        <tr style="background:#f8fafc;color:#475569;border-bottom:1px solid #e2e8f0;">
+                                            <th style="padding:8px 10px;font-weight:600;">No</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Periode Tagihan</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Tarif Normal</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Potongan Diskon</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Tagihan Bersih</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Keterangan Billing</th>
+                                            <th style="padding:8px 10px;font-weight:600;">Sumber Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $noD = 1; foreach ($riwayatDiskon as $dItem):
+                                            $nomDisk = (float) ($dItem['nominal_diskon'] ?? 0);
+                                            $tglPeriode = salamBulananIndonesia($dItem['periode'] . '-01', false);
+                                        ?>
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td style="padding:8px 10px;color:#94a3b8;"><?= $noD++; ?></td>
+                                            <td style="padding:8px 10px;font-weight:600;color:#1e293b;white-space:nowrap;"><?= htmlspecialchars($tglPeriode); ?></td>
+                                            <td style="padding:8px 10px;color:#64748b;white-space:nowrap;"><?= htmlspecialchars(salamRupiah($dItem['tarif_normal'] ?? 0)); ?></td>
+                                            <td style="padding:8px 10px;white-space:nowrap;">
+                                                <span style="font-weight:700;color:#7e22ce;">-<?= htmlspecialchars(salamRupiah($nomDisk)); ?></span>
+                                                <span style="display:inline-block;padding:1px 6px;background:#f3e8ff;color:#6b21a8;border-radius:10px;font-size:10px;font-weight:700;margin-left:4px;">
+                                                    <?= htmlspecialchars($dItem['label_singkat']); ?>
+                                                </span>
+                                            </td>
+                                            <td style="padding:8px 10px;font-weight:700;color:#16a34a;white-space:nowrap;"><?= htmlspecialchars(salamRupiah($dItem['tarif_setelah_diskon'] ?? 0)); ?></td>
+                                            <td style="padding:8px 10px;color:#334155;font-style:italic;"><?= htmlspecialchars((string)($dItem['keterangan'] ?: '-')); ?></td>
+                                            <td style="padding:8px 10px;color:#64748b;font-size:11px;white-space:nowrap;"><?= htmlspecialchars((string)($dItem['admin_nama'] ?: 'Sistem (Data Billing)')); ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
                 <div class="actions">
                     <?php if ($isModal): ?>
                         <button type="button" class="btn btn-muted" onclick="window.parent.postMessage(JSON.stringify({action:'close'}),'*')">Batal</button>
@@ -716,6 +839,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
             tagihan.value = tarifTersimpan.value || '0';
         }
     });
+
+    const nominalDiskonInput = document.getElementById('nominal_diskon');
+    if (nominalDiskonInput) {
+        nominalDiskonInput.addEventListener('input', function () {
+            const disk = Number(this.value || 0);
+            const base = Number(tarifTersimpan.value || 0);
+            if (status.value !== 'Lunas') {
+                if (disk > 0 && base > 0) {
+                    tagihan.value = Math.max(0, base - disk);
+                } else if (disk === 0 && base > 0) {
+                    tagihan.value = base;
+                }
+            }
+        });
+    }
 })();
 </script>
 <script>

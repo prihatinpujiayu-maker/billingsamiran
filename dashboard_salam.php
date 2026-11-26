@@ -429,6 +429,24 @@ body.mode-biaya-instalasi #biaya-instalasi {
         color: #fff;
         border-color: #2980b9;
     }
+    .badge-diskon {
+        background-color: #f4ecf7;
+        color: #6c3483;
+        border: 1px solid #d2b4de;
+    }
+    .badge-diskon:hover {
+        background-color: #8e44ad;
+        color: #fff;
+        border-color: #8e44ad;
+    }
+    .tagihan-diskon-note {
+        display: block;
+        font-size: 11px;
+        color: #8e44ad;
+        font-weight: 600;
+        margin-top: 2px;
+        white-space: nowrap;
+    }
     .paket-selisih {
         font-size: 10px;
         font-weight: 600;
@@ -2481,6 +2499,13 @@ body.mode-biaya-instalasi #biaya-instalasi {
                     <p id="label-belum-lunas-periode">Belum Lunas Bulan Ini</p>
                 </div>
             </div>
+            <div class="stat-card" data-filter="diskon" onclick="filterByStatus('diskon')" title="Klik untuk menampilkan pelanggan dengan potongan diskon">
+                <div class="icon" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);"><i class="fas fa-tags"></i></div>
+                <div class="stat-info">
+                    <h3 id="total-diskon" style="color: #6b21a8;">...</h3>
+                    <p>Pelanggan Diskon</p>
+                </div>
+            </div>
         </div>
 
        <div class="table-header">
@@ -2577,6 +2602,16 @@ body.mode-biaya-instalasi #biaya-instalasi {
                                 <div class="col">
                                     <label class="small">Tanggal Pasang</label>
                                     <input type="text" name="tanggal_pasang" placeholder="">
+                                </div>
+                            </div>
+                            <div class="grid" style="margin-top:12px;background:#faf5ff;padding:12px;border-radius:8px;border:1px solid #f3e8ff;">
+                                <div class="col">
+                                    <label class="small" style="font-weight:700;color:#6b21a8;">🏷️ Potongan Diskon (Rp) <span style="font-weight:400;color:#9333ea;font-size:11px;">(opsional)</span></label>
+                                    <input type="number" name="nominal_diskon" min="0" step="1000" placeholder="0" style="border-color:#d8b4fe;">
+                                </div>
+                                <div class="col">
+                                    <label class="small" style="font-weight:700;color:#6b21a8;">Keterangan / Alasan Diskon</label>
+                                    <input type="text" name="keterangan_diskon" placeholder="Contoh: disk 20k / Promo khusus" style="border-color:#d8b4fe;">
                                 </div>
                             </div>
                             <div style="margin-top:18px;padding-top:15px;border-top:1px solid #e9eef3;">
@@ -3028,6 +3063,38 @@ body.mode-biaya-instalasi #biaya-instalasi {
                 confirmButtonColor: '#3498db'
             });
         }
+
+        // Menampilkan modal detail potongan diskon pelanggan
+        function showDiskonDetail(info) {
+            if (!info) return;
+            Swal.fire({
+                title: `<div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;">
+                    <span style="background:#f4ecf7;color:#6c3483;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;">
+                        🏷️ Diskon Tagihan
+                    </span>
+                    <span>Detail Potongan Diskon</span>
+                </div>`,
+                html: `
+                    <div style="text-align:left;font-size:13.5px;line-height:1.7;color:#333;margin-top:10px;">
+                        <div style="background:#fdfefe;border:1px solid #ebedef;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#555;">
+                            <i class="fas fa-info-circle" style="color:#8e44ad;margin-right:6px;"></i>
+                            <strong>Kasus Khusus Diskon:</strong> Ini adalah potongan harga pada tagihan periode terkait, <u>bukan</u> perubahan paket langganan (upgrade/downgrade).
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;">
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;width:40%;">Pelanggan:</td><td style="padding:7px 0;font-weight:600;">${info.nama} <span style="font-size:12px;color:#95a5a6;">(${info.id_pelanggan || '-'})</span></td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Periode Tagihan:</td><td style="padding:7px 0;font-weight:600;">${info.periode}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Tarif Paket Normal:</td><td style="padding:7px 0;font-weight:600;">${info.tarif_normal}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Potongan Diskon:</td><td style="padding:7px 0;font-weight:700;color:#8e44ad;">-${info.nominal_diskon}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Tagihan Setelah Diskon:</td><td style="padding:7px 0;font-weight:700;color:#27ae60;">${info.tarif_setelah}</td></tr>
+                            <tr style="border-bottom:1px solid #eee;"><td style="padding:7px 0;color:#7f8c8d;">Catatan Billing:</td><td style="padding:7px 0;font-style:italic;color:#333;">${info.keterangan}</td></tr>
+                            <tr><td style="padding:7px 0;color:#7f8c8d;">Sumber Data:</td><td style="padding:7px 0;color:#555;">${info.admin}</td></tr>
+                        </table>
+                    </div>
+                `,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#8e44ad'
+            });
+        }
         
         // --- SCRIPT UTAMA DIMODIFIKASI ---
         // PINDAH TAB BIAYA INSTALASI
@@ -3187,6 +3254,8 @@ window.pulihkanBiayaInstalasi = async function(id) {
                     document.getElementById('total-pelanggan').innerText = data.total_pelanggan;
                     document.getElementById('tagihan-lunas').innerText = data.lunas_bulan_ini;
                     document.getElementById('tagihan-belum-lunas').innerText = data.belum_lunas_bulan_ini;
+                    const totalDiskonEl = document.getElementById('total-diskon');
+                    if (totalDiskonEl) totalDiskonEl.innerText = data.total_diskon ?? 0;
                 })
                 .catch(err => console.error('Error loading payment stats:', err));
 
