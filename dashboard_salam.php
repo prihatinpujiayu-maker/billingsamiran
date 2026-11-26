@@ -2211,6 +2211,199 @@ body.mode-biaya-instalasi #biaya-instalasi {
 .swal2-popup {
     z-index: 999999 !important;
 }
+
+
+/* =========================================================
+   TAMPILAN BARU BIAYA INSTALASI SAMIRAN
+   CSS dibatasi pada #biaya-instalasi agar dashboard utama
+   dan fungsi PHP/JavaScript yang lain tidak ikut berubah.
+   ========================================================= */
+#biaya-instalasi {
+    background: #f3f6fb !important;
+    color: #243247;
+    padding: 26px clamp(14px, 3vw, 34px) 36px !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+#biaya-instalasi > div:first-child {
+    background: linear-gradient(120deg, #203b63 0%, #2f6fa8 100%);
+    color: #fff;
+    padding: 22px 26px;
+    margin: -26px calc(clamp(14px, 3vw, 34px) * -1) 24px !important;
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 5px 18px rgba(25, 55, 90, .16);
+}
+#biaya-instalasi > div:first-child h2 {
+    color: #fff !important;
+    font-size: clamp(20px, 2.4vw, 27px);
+    font-weight: 700;
+    letter-spacing: .1px;
+}
+#biaya-instalasi > div:first-child button {
+    background: #fff !important;
+    color: #285b8e !important;
+    border: 1px solid rgba(255,255,255,.5) !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+#biaya-instalasi > p {
+    color: #64748b !important;
+    margin: 0 0 18px;
+    font-size: 14px;
+}
+#form-biaya-instalasi {
+    background: #fff;
+    padding: 22px;
+    border: 1px solid #e5ebf3;
+    border-radius: 14px;
+    box-shadow: 0 5px 18px rgba(31, 55, 82, .06);
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+    gap: 16px !important;
+    margin-bottom: 26px !important;
+}
+#biaya-instalasi label {
+    display: block;
+    color: #34445b;
+    font-size: 13px;
+    font-weight: 650;
+    margin-bottom: 5px;
+}
+#biaya-instalasi input,
+#biaya-instalasi select {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px 12px !important;
+    margin-top: 4px !important;
+    border: 1px solid #d9e2ee;
+    border-radius: 8px;
+    background: #fbfdff;
+    color: #253449;
+    font: inherit;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+#biaya-instalasi input:focus,
+#biaya-instalasi select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52,152,219,.13);
+}
+#form-biaya-instalasi button[type="submit"] {
+    min-height: 43px;
+    background: #269b68 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px rgba(38,155,104,.18);
+}
+#biaya-instalasi > h3 {
+    color: #243b5a;
+    font-size: 20px;
+    margin: 0 0 12px;
+}
+#biaya-instalasi > div:has(> #btn-data-aktif) {
+    gap: 8px !important;
+    margin: 14px 0 16px !important;
+}
+#biaya-instalasi #btn-data-aktif,
+#biaya-instalasi #btn-riwayat-biaya {
+    border-radius: 8px !important;
+    padding: 10px 17px !important;
+    font-weight: 650;
+    box-shadow: 0 2px 7px rgba(31,55,82,.08);
+}
+#biaya-instalasi #panel-data-aktif,
+#biaya-instalasi #panel-riwayat-biaya {
+    background: #fff;
+    border: 1px solid #e5ebf3;
+    border-radius: 12px;
+    box-shadow: 0 5px 18px rgba(31,55,82,.06);
+    padding: 12px;
+}
+#biaya-instalasi #panel-riwayat-biaya {
+    margin-top: 16px !important;
+}
+#biaya-instalasi #panel-riwayat-biaya h3 {
+    color: #243b5a;
+    font-size: 17px;
+    margin: 4px 4px 14px;
+}
+#biaya-instalasi table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: separate !important;
+    border-spacing: 0;
+    color: #334155;
+    font-size: 13px;
+}
+#biaya-instalasi table thead tr {
+    background: #287fbd !important;
+    color: #fff;
+}
+#biaya-instalasi table thead th {
+    padding: 14px 12px !important;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: .35px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+#biaya-instalasi table thead th:first-child {
+    border-radius: 7px 0 0 0;
+}
+#biaya-instalasi table thead th:last-child {
+    border-radius: 0 7px 0 0;
+}
+#biaya-instalasi table tbody td {
+    padding: 13px 12px !important;
+    border-bottom: 1px solid #edf1f6;
+    vertical-align: middle;
+}
+#biaya-instalasi table tbody tr:nth-child(even) {
+    background: #f8fbff;
+}
+#biaya-instalasi table tbody tr:hover {
+    background: #edf6ff;
+}
+#modal-edit-biaya-instalasi > div {
+    border: 1px solid #e5ebf3;
+    box-shadow: 0 18px 55px rgba(15,35,60,.25);
+}
+#modal-edit-biaya-instalasi h3 {
+    color: #285b8e !important;
+}
+#form-edit-biaya-instalasi button[type="submit"] {
+    background: #287fbd !important;
+    border-radius: 8px !important;
+}
+#form-edit-biaya-instalasi button[type="button"] {
+    background: #8795a6 !important;
+    border-radius: 8px !important;
+}
+@media (max-width: 640px) {
+    #biaya-instalasi {
+        padding: 18px 12px 26px !important;
+    }
+    #biaya-instalasi > div:first-child {
+        margin: -18px -12px 20px !important;
+        padding: 18px 14px;
+        align-items: flex-start !important;
+    }
+    #biaya-instalasi > div:first-child button {
+        width: 100%;
+        justify-content: center;
+    }
+    #form-biaya-instalasi {
+        padding: 15px;
+        grid-template-columns: 1fr !important;
+    }
+    #biaya-instalasi #panel-data-aktif,
+    #biaya-instalasi #panel-riwayat-biaya {
+        padding: 8px;
+    }
+}
+
 </style>
 </head>
 <body>
@@ -2508,7 +2701,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
     box-shadow:0 2px 10px rgba(0,0,0,.08);
 ">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-    <h2 style="color:#16a085;margin:0;">
+    <h2 style="color:#3498db;margin:0;">
         <i class="fas fa-screwdriver-wrench"></i>
         Biaya Instalasi Pelanggan
     </h2>
@@ -2600,7 +2793,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
 
         <div style="display:flex;align-items:end;">
             <button type="submit" style="
-                width:100%;padding:12px;background:#16a085;
+                width:100%;padding:12px;background:#3498db;
                 color:white;border:0;border-radius:7px;
                 cursor:pointer;font-weight:bold;">
                 <i class="fas fa-save"></i> Simpan Biaya Instalasi
@@ -2703,13 +2896,13 @@ body.mode-biaya-instalasi #biaya-instalasi {
 <div style="display:flex;gap:10px;margin:15px 0;flex-wrap:wrap;">
     <button type="button" id="btn-data-aktif"
         onclick="tampilkanTabBiaya('aktif')"
-        style="padding:10px 16px;background:#16a085;color:white;border:none;border-radius:6px;cursor:pointer;">
+        style="padding:10px 16px;background:#3498db;color:white;border:none;border-radius:6px;cursor:pointer;">
         Data Aktif
     </button>
 
     <button type="button" id="btn-riwayat-biaya"
         onclick="tampilkanTabBiaya('riwayat')"
-        style="padding:10px 16px;background:#7f8c8d;color:white;border:none;border-radius:6px;cursor:pointer;">
+        style="padding:10px 16px;background:#3498db;color:white;border:none;border-radius:6px;cursor:pointer;">
         Riwayat Terhapus
     </button>
 </div>
@@ -2718,7 +2911,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
     <table style="width:100%;border-collapse:collapse;min-width:750px;">
             <thead>
                 
-<tr style="background:#16a085;color:white;">
+<tr style="background:#3498db;color:white;">
     <th style="padding:12px;">No.</th>
     <th style="padding:12px;">Pelanggan</th>
     <th style="padding:12px;">Nominal</th>
@@ -2738,6 +2931,12 @@ body.mode-biaya-instalasi #biaya-instalasi {
             </tbody>
         </table>
     </div>
+    <div id="pagination-biaya-instalasi"
+         style="display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;margin:18px 0 8px;">
+    </div>
+    <div id="info-pagination-biaya-instalasi"
+         style="text-align:center;color:#64748b;font-size:13px;margin-bottom:15px;">
+    </div>
     <!-- TABEL RIWAYAT TERHAPUS -->
 <div id="panel-riwayat-biaya" style="display:none;margin-top:20px;">
     <h3>Riwayat Biaya Instalasi Terhapus</h3>
@@ -2745,7 +2944,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
     <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;min-width:750px;">
             <thead>
-                <tr style="background:#7f8c8d;color:white;">
+                <tr style="background:#3498db;color:white;">
                     <th style="padding:12px;">No.</th>
                     <th style="padding:12px;">Pelanggan</th>
                     <th style="padding:12px;">Nominal</th>
@@ -2847,14 +3046,14 @@ function tampilkanTabBiaya(tab) {
         panelRiwayat.style.display = 'block';
 
         document.getElementById('btn-data-aktif').style.background = '#7f8c8d';
-        document.getElementById('btn-riwayat-biaya').style.background = '#16a085';
+        document.getElementById('btn-riwayat-biaya').style.background = '#3498db';
 
         muatRiwayatBiaya();
     } else {
         panelAktif.style.display = 'block';
         panelRiwayat.style.display = 'none';
 
-        document.getElementById('btn-data-aktif').style.background = '#16a085';
+        document.getElementById('btn-data-aktif').style.background = '#3498db';
         document.getElementById('btn-riwayat-biaya').style.background = '#7f8c8d';
 
         muatBiayaInstalasi();
@@ -3893,131 +4092,166 @@ function escapeInstalasi(teks) {
     });
 }
 
+let halamanBiayaInstalasi = 1;
+const jumlahPerHalamanBiayaInstalasi = 10;
+
+function renderPaginationBiayaInstalasi(totalData) {
+    const wadah = document.getElementById('pagination-biaya-instalasi');
+    const info = document.getElementById('info-pagination-biaya-instalasi');
+    const totalHalaman = Math.max(1, Math.ceil(totalData / jumlahPerHalamanBiayaInstalasi));
+
+    if (halamanBiayaInstalasi > totalHalaman) halamanBiayaInstalasi = totalHalaman;
+    if (halamanBiayaInstalasi < 1) halamanBiayaInstalasi = 1;
+
+    if (!totalData) {
+        wadah.innerHTML = '';
+        info.textContent = 'Belum ada pelanggan untuk ditampilkan.';
+        return;
+    }
+
+    const mulai = (halamanBiayaInstalasi - 1) * jumlahPerHalamanBiayaInstalasi + 1;
+    const selesai = Math.min(halamanBiayaInstalasi * jumlahPerHalamanBiayaInstalasi, totalData);
+    info.textContent = `Menampilkan ${mulai}-${selesai} dari ${totalData} pelanggan`;
+
+    let tombol = `
+        <button type="button" onclick="gantiHalamanBiayaInstalasi(${halamanBiayaInstalasi - 1})"
+            ${halamanBiayaInstalasi === 1 ? 'disabled' : ''}
+            style="padding:8px 12px;border:1px solid #dbe3ec;border-radius:6px;background:#fff;cursor:pointer;">
+            &laquo;
+        </button>`;
+
+    let awal = Math.max(1, halamanBiayaInstalasi - 2);
+    let akhir = Math.min(totalHalaman, awal + 4);
+    awal = Math.max(1, akhir - 4);
+
+    for (let nomor = awal; nomor <= akhir; nomor++) {
+        tombol += `
+            <button type="button" onclick="gantiHalamanBiayaInstalasi(${nomor})"
+                style="min-width:36px;padding:8px 11px;border:1px solid ${nomor === halamanBiayaInstalasi ? '#3498db' : '#dbe3ec'};border-radius:6px;background:${nomor === halamanBiayaInstalasi ? '#3498db' : '#fff'};color:${nomor === halamanBiayaInstalasi ? '#fff' : '#334155'};font-weight:600;cursor:pointer;">
+                ${nomor}
+            </button>`;
+    }
+
+    tombol += `
+        <button type="button" onclick="gantiHalamanBiayaInstalasi(${halamanBiayaInstalasi + 1})"
+            ${halamanBiayaInstalasi === totalHalaman ? 'disabled' : ''}
+            style="padding:8px 12px;border:1px solid #dbe3ec;border-radius:6px;background:#fff;cursor:pointer;">
+            &raquo;
+        </button>`;
+
+    wadah.innerHTML = tombol;
+}
+
+window.gantiHalamanBiayaInstalasi = function(nomor) {
+    const totalData = (window.dataBiayaInstalasi || []).length;
+    const totalHalaman = Math.max(1, Math.ceil(totalData / jumlahPerHalamanBiayaInstalasi));
+    halamanBiayaInstalasi = Math.min(Math.max(1, Number(nomor) || 1), totalHalaman);
+    tampilkanHalamanBiayaInstalasi();
+};
+
+function tampilkanHalamanBiayaInstalasi() {
+    const tbody = document.getElementById('daftar-biaya-instalasi');
+    const semuaData = window.dataBiayaInstalasi || [];
+    const totalHalaman = Math.max(1, Math.ceil(semuaData.length / jumlahPerHalamanBiayaInstalasi));
+    halamanBiayaInstalasi = Math.min(Math.max(1, halamanBiayaInstalasi), totalHalaman);
+    const awal = (halamanBiayaInstalasi - 1) * jumlahPerHalamanBiayaInstalasi;
+    const dataHalaman = semuaData.slice(awal, awal + jumlahPerHalamanBiayaInstalasi);
+
+    if (!semuaData.length) {
+        tbody.innerHTML = `
+            <tr><td colspan="8" style="padding:15px;text-align:center;">
+                Belum ada data pelanggan.
+            </td></tr>`;
+        renderPaginationBiayaInstalasi(0);
+        return;
+    }
+
+    tbody.innerHTML = dataHalaman.map((item, index) => {
+        const nomor = awal + index + 1;
+        const sudahDiatur = Number(item.has_biaya) === 1 && item.id !== null;
+
+        const nominal = sudahDiatur
+            ? formatRupiahInstalasi(item.nominal)
+            : '<span style="color:#94a3b8;">Belum diatur</span>';
+        const status = sudahDiatur
+            ? `<strong style="color:${item.status_bayar === 'Lunas' ? '#16a085' : '#e67e22'};">${escapeInstalasi(item.status_bayar || 'Belum Lunas')}</strong>`
+            : '<span style="color:#94a3b8;">Belum diatur</span>';
+
+        const aksi = sudahDiatur ? `
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <button type="button" onclick="editBiayaInstalasi(${Number(item.id)})"
+                    title="Edit data biaya instalasi"
+                    style="background:#f39c12;color:white;border:none;border-radius:6px;padding:9px 11px;cursor:pointer;">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <select onchange="ubahStatusBiayaInstalasi(${Number(item.id)}, this.value)"
+                    style="padding:8px 10px;border:0;border-radius:6px;cursor:pointer;font-weight:bold;color:white;background:${item.status_bayar === 'Lunas' ? '#3498db' : '#e74c3c'};">
+                    <option value="Belum Lunas" ${item.status_bayar === 'Belum Lunas' ? 'selected' : ''}>Belum Lunas</option>
+                    <option value="Lunas" ${item.status_bayar === 'Lunas' ? 'selected' : ''}>Lunas</option>
+                </select>
+                <button type="button" onclick="hapusBiayaInstalasi(${Number(item.id)})"
+                    title="Pindahkan ke riwayat terhapus"
+                    style="background:#e74c3c;color:white;border:none;border-radius:6px;padding:9px 11px;cursor:pointer;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>` : `
+            <button type="button" onclick="pilihPelangganInstalasi(${Number(item.pelanggan_id)})"
+                style="background:#3498db;color:white;border:0;border-radius:6px;padding:9px 12px;cursor:pointer;font-weight:600;">
+                <i class="fas fa-plus"></i> Isi Biaya
+            </button>`;
+
+        return `
+            <tr data-id="${item.id === null ? '' : Number(item.id)}" style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;text-align:center;">${nomor}</td>
+                <td style="padding:12px;">
+                    <strong>${escapeInstalasi(item.nama)}</strong><br>
+                    <small>${escapeInstalasi(item.id_pelanggan || '-')}</small>
+                </td>
+                <td style="padding:12px;">${nominal}</td>
+                <td style="padding:12px;">${escapeInstalasi(item.tanggal_instalasi || '-')}</td>
+                <td class="status-bayar" style="padding:12px;">${status}</td>
+                <td style="padding:12px;">${escapeInstalasi(item.tanggal_bayar || '-')}</td>
+                <td style="padding:12px;">${escapeInstalasi(item.keterangan || '-')}</td>
+                <td style="padding:12px;">${aksi}</td>
+            </tr>`;
+    }).join('');
+
+    renderPaginationBiayaInstalasi(semuaData.length);
+}
+
+window.pilihPelangganInstalasi = function(pelangganId) {
+    const form = document.getElementById('form-biaya-instalasi');
+    form.elements['pelanggan_id'].value = String(pelangganId);
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    form.elements['nominal'].focus();
+};
+
 async function muatBiayaInstalasi() {
     const tbody = document.getElementById('daftar-biaya-instalasi');
 
     try {
         const response = await fetch(apiBiayaInstalasi, {
-    method: 'GET',
-    cache: 'no-store'
-});
-const hasil = await response.json();
+            method: 'GET',
+            cache: 'no-store'
+        });
+        const hasil = await response.json();
 
         if (!hasil.success) {
             throw new Error(hasil.message || 'Gagal mengambil data.');
         }
-        window.dataBiayaInstalasi = hasil.data;
 
-        if (!hasil.data.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="padding:15px;text-align:center;">
-                        Belum ada data biaya instalasi.
-                    </td>
-                </tr>`;
-            return;
-        }
-
-        tbody.innerHTML = hasil.data.map((item, index) => `
-            <tr data-id="${Number(item.id)}" style="border-bottom:1px solid #eee;">
-                <td style="padding:12px;text-align:center;">${index + 1}</td>
-                <td style="padding:12px;">
-                    <strong>${escapeInstalasi(item.nama)}</strong><br>
-                    <small>${escapeInstalasi(item.id_pelanggan)}</small>
-                </td>
-                <td style="padding:12px;">
-                    ${formatRupiahInstalasi(item.nominal)}
-                </td>
-                <td style="padding:12px;">
-                    ${escapeInstalasi(item.tanggal_instalasi || '-')}
-                </td>
-                <td class="status-bayar" style="padding:12px;">
-                 <strong style="color:${item.status_bayar === 'Lunas' ? '#16a085' : '#e67e22'};">
-                    ${escapeInstalasi(item.status_bayar)}
-                </strong>
-                </td>
-                <td style="padding:12px;">
-                    ${escapeInstalasi(item.tanggal_bayar || '-')}
-                </td>
-                <td style="padding:12px;">
-                    ${escapeInstalasi(item.keterangan || '-')}
-                </td>
-                
-<td style="padding:12px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-    <button
-    type="button"
-    onclick="editBiayaInstalasi(${Number(item.id)})"
-    title="Edit data biaya instalasi"
-    style="
-        background:#f39c12;
-        color:white;
-        border:none;
-        border-radius:6px;
-        padding:9px 11px;
-        cursor:pointer;
-    "
->
-    <i class="fas fa-edit"></i>
-</button>
-        <select
-            onchange="
-                this.style.backgroundColor = this.value === 'Lunas' ? '#3498db' : '#e74c3c';
-                this.style.color = '#ffffff';
-                console.log('Dropdown berubah:', this.value);
-                ubahStatusBiayaInstalasi(${Number(item.id)}, this.value);
-            "
-            style="
-                padding:8px 12px;
-                border:0;
-                border-radius:6px;
-                cursor:pointer;
-                font-weight:bold;
-                color:white;
-                background-color:${item.status_bayar === 'Lunas' ? '#3498db' : '#e74c3c'};
-                outline:none;
-                appearance:auto;
-            "
-        >
-            <option value="Belum Lunas" style="background:#e74c3c;color:white;"
-                ${item.status_bayar === 'Belum Lunas' ? 'selected' : ''}>
-                Belum Lunas
-            </option>
-
-            <option value="Lunas" style="background:#3498db;color:white;"
-                ${item.status_bayar === 'Lunas' ? 'selected' : ''}>
-                Lunas
-            </option>
-        </select>
-
-        <button
-            type="button"
-            onclick="console.log('Tombol sampah diklik, ID:', ${Number(item.id)}); hapusBiayaInstalasi(${Number(item.id)})"
-            title="Hapus data"
-            style="
-                background:#e74c3c;
-                color:white;
-                border:none;
-                border-radius:6px;
-                padding:9px 11px;
-                cursor:pointer;
-            "
-        >
-            <i class="fas fa-trash"></i>
-        </button>
-    </div>
-</td>
-
-            </tr>
-        `).join('');
+        window.dataBiayaInstalasi = hasil.data || [];
+        tampilkanHalamanBiayaInstalasi();
 
     } catch (error) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="padding:15px;text-align:center;color:red;">
+                <td colspan="8" style="padding:15px;text-align:center;color:red;">
                     ${escapeInstalasi(error.message)}
                 </td>
             </tr>`;
+        document.getElementById('pagination-biaya-instalasi').innerHTML = '';
+        document.getElementById('info-pagination-biaya-instalasi').textContent = '';
     }
 }
 

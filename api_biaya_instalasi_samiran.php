@@ -33,23 +33,71 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // AMBIL DATA BIAYA INSTALASI
 if ($method === 'GET') {
+
+    // AMBIL RIWAYAT TERHAPUS
+    if (($_GET['riwayat'] ?? '') === '1') {
+        $sqlRiwayat = "
+            SELECT
+                b.id,
+                b.pelanggan_id,
+                p.id_pelanggan,
+                p.nama,
+                b.nominal,
+                b.tanggal_instalasi,
+                b.deleted_at,
+                DATEDIFF(
+                    DATE_ADD(b.deleted_at, INTERVAL 30 DAY),
+                    NOW()
+                ) AS sisa_hari
+            FROM biaya_instalasi_samiran b
+            INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
+            WHERE b.deleted_at IS NOT NULL
+            ORDER BY b.deleted_at DESC
+        ";
+
+        $resultRiwayat = $koneksi->query($sqlRiwayat);
+
+        if (!$resultRiwayat) {
+            kirimJson(false, 'Gagal mengambil riwayat: ' . $koneksi->error);
+        }
+
+        $riwayat = [];
+        while ($rowRiwayat = $resultRiwayat->fetch_assoc()) {
+            $riwayat[] = $rowRiwayat;
+        }
+
+        kirimJson(true, 'Riwayat terhapus berhasil diambil.', $riwayat);
+    }
+
+    // Tampilkan SEMUA pelanggan. Biaya instalasi bersifat opsional
+    // sampai admin mengisi nominal dan menyimpannya.
+    // Pelanggan dengan data yang sedang berada di Riwayat Terhapus
+    // tidak ditampilkan di Data Aktif agar tidak muncul dua kali.
     $sql = "
-    SELECT
-        b.id,
-        b.pelanggan_id,
-        p.id_pelanggan,
-        p.nama,
-        p.alamat,
-        b.nominal,
-        b.status_bayar,
-        b.tanggal_instalasi,
-        b.tanggal_bayar,
-        b.keterangan
-    FROM biaya_instalasi_samiran b
-    INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
-    WHERE b.deleted_at IS NULL
-    ORDER BY b.id DESC
-";
+        SELECT
+            b.id,
+            p.id AS pelanggan_id,
+            p.id_pelanggan,
+            p.nama,
+            p.alamat,
+            b.nominal,
+            b.status_bayar,
+            b.tanggal_instalasi,
+            b.tanggal_bayar,
+            b.keterangan,
+            CASE WHEN b.id IS NULL THEN 0 ELSE 1 END AS has_biaya
+        FROM pelanggan_salam p
+        LEFT JOIN biaya_instalasi_samiran b
+            ON b.pelanggan_id = p.id
+            AND b.deleted_at IS NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM biaya_instalasi_samiran bx
+            WHERE bx.pelanggan_id = p.id
+              AND bx.deleted_at IS NOT NULL
+        )
+        ORDER BY p.nama ASC
+    ";
 
     $result = $koneksi->query($sql);
 
@@ -58,47 +106,11 @@ if ($method === 'GET') {
     }
 
     $data = [];
-
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }
-    // AMBIL RIWAYAT TERHAPUS
-if (($_GET['riwayat'] ?? '') === '1') {
-    $sqlRiwayat = "
-        SELECT
-            b.id,
-            b.pelanggan_id,
-            p.id_pelanggan,
-            p.nama,
-            b.nominal,
-            b.tanggal_instalasi,
-            b.deleted_at,
-            DATEDIFF(
-                DATE_ADD(b.deleted_at, INTERVAL 30 DAY),
-                NOW()
-            ) AS sisa_hari
-        FROM biaya_instalasi_samiran b
-        INNER JOIN pelanggan_salam p ON p.id = b.pelanggan_id
-        WHERE b.deleted_at IS NOT NULL
-        ORDER BY b.deleted_at DESC
-    ";
 
-    $resultRiwayat = $koneksi->query($sqlRiwayat);
-
-    if (!$resultRiwayat) {
-        kirimJson(false, 'Gagal mengambil riwayat: ' . $koneksi->error);
-    }
-
-    $riwayat = [];
-
-    while ($rowRiwayat = $resultRiwayat->fetch_assoc()) {
-        $riwayat[] = $rowRiwayat;
-    }
-
-    kirimJson(true, 'Riwayat terhapus berhasil diambil.', $riwayat);
-}
-
-    kirimJson(true, 'Data berhasil diambil.', $data);
+    kirimJson(true, 'Data pelanggan berhasil diambil.', $data);
 }
 
 // PROSES SIMPAN / UBAH DATA
