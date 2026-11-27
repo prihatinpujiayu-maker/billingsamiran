@@ -34,7 +34,7 @@ $response = ['success'=>true,'message'=>'Status pembayaran diperbarui.','receipt
     'nama'=>$updated['nama'] ?? '-',
     'id_pelanggan'=>$updated['id_pelanggan'] ?? '-',
     'paket'=>$updated['paket'] ?? '-',
-    'periode'=>salamBulananIndonesia($updated['waktu'] ?? null, false),
+    'periode'=>substr($periode, 0, 4) === '2025' || substr((string)($updated['waktu'] ?? ''), 0, 4) === '2025' ? 'Sisa Tagihan 2025' : salamBulananIndonesia($updated['waktu'] ?? null, false),
     'masa_aktif'=>salamBulananIndonesia($updated['langganan_selesai'] ?? null, true),
     'tanggal_bayar'=>salamBulananIndonesia($updated['tanggal_bayar'] ?? null, true),
     'nominal'=>salamRupiah($updated['nominal_dibayar'] ?? 0),

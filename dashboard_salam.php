@@ -2920,8 +2920,28 @@ body.mode-biaya-instalasi #biaya-instalasi {
             return /^62\d{8,14}$/.test(number) ? number : '';
         }
 
+        const dashboardBulanOptionsList = [
+            { key: '01', label: 'Januari' },
+            { key: '02', label: 'Februari' },
+            { key: '03', label: 'Maret' },
+            { key: '04', label: 'April' },
+            { key: '05', label: 'Mei' },
+            { key: '06', label: 'Juni' },
+            { key: '07', label: 'Juli' },
+            { key: '08', label: 'Agustus' },
+            { key: '09', label: 'September' },
+            { key: '10', label: 'Oktober' },
+            { key: '11', label: 'November' },
+            { key: '12', label: 'Desember' }
+        ];
+
+        let previousSelectedMonth = '<?= date('m'); ?>';
+
         function periodeLabelDashboard(periode) {
             const [tahun, bulan] = String(periode || '').split('-');
+            if (tahun === '2025') {
+                return 'Sisa Tagihan 2025';
+            }
             const namaBulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             return `${namaBulan[Number(bulan)] || bulan} ${tahun || ''}`.trim();
         }
@@ -2930,9 +2950,29 @@ body.mode-biaya-instalasi #biaya-instalasi {
             const bulan = document.getElementById('periode-bulan');
             const tahun = document.getElementById('periode-tahun');
             if (!bulan || !tahun) return;
+
+            if (tahun.value === '2025') {
+                if (bulan.value !== '12' && bulan.options.length > 1) {
+                    previousSelectedMonth = bulan.value;
+                }
+                bulan.innerHTML = '<option value="12" selected>Sisa Tagihan 2025</option>';
+            } else {
+                if (bulan.options.length === 1 && bulan.options[0].text.includes('Sisa Tagihan')) {
+                    const targetMonth = previousSelectedMonth || '<?= date('m'); ?>';
+                    bulan.innerHTML = dashboardBulanOptionsList.map(b => 
+                        `<option value="${b.key}" ${b.key === targetMonth ? 'selected' : ''}>${b.label}</option>`
+                    ).join('');
+                }
+            }
+
             currentPeriode = `${tahun.value}-${bulan.value}`;
-            document.getElementById('label-lunas-periode').textContent = `Lunas ${periodeLabelDashboard(currentPeriode)}`;
-            document.getElementById('label-belum-lunas-periode').textContent = `Belum Lunas ${periodeLabelDashboard(currentPeriode)}`;
+            if (tahun.value === '2025') {
+                document.getElementById('label-lunas-periode').textContent = 'Lunas Sisa Tagihan 2025';
+                document.getElementById('label-belum-lunas-periode').textContent = 'Belum Lunas Sisa Tagihan 2025';
+            } else {
+                document.getElementById('label-lunas-periode').textContent = `Lunas ${periodeLabelDashboard(currentPeriode)}`;
+                document.getElementById('label-belum-lunas-periode').textContent = `Belum Lunas ${periodeLabelDashboard(currentPeriode)}`;
+            }
             if (reload) {
                 currentPage = 1;
                 loadData(currentPage, currentSearch, currentFilter);
@@ -3089,10 +3129,14 @@ body.mode-biaya-instalasi #biaya-instalasi {
             });
         }
 
-        function confirmDelete(id) {
+        function confirmDelete(id, periode = currentPeriode) {
+            const is2025 = String(periode || '').startsWith('2025');
+            const confirmMsg = is2025
+                ? 'Yakin ingin menghapus data sisa tagihan 2025 untuk pelanggan ini?'
+                : 'Data yang dihapus tidak dapat dikembalikan. Yakin ingin melanjutkan?';
             Swal.fire({
                 title: 'Hapus data?',
-                text: 'Data yang dihapus tidak dapat dikembalikan. Yakin ingin melanjutkan?',
+                text: confirmMsg,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Ya, Hapus',
@@ -3110,6 +3154,7 @@ body.mode-biaya-instalasi #biaya-instalasi {
                         },
                         body: new URLSearchParams({
                             id: String(id),
+                            periode: String(periode || ''),
                             confirmed: '1'
                         }).toString()
                     })
