@@ -19,6 +19,7 @@ $filter = strtolower(trim((string) ($_GET['filter'] ?? 'all')));
 $wilayahFilter = trim((string) ($_GET['wilayah'] ?? 'all'));
 $periode = salamPeriodeYm($_GET['periode'] ?? date('Y-m'));
 $periodeEsc = $koneksi->real_escape_string($periode);
+$isYear2025 = (substr($periode, 0, 4) === '2025');
 
 $sourceSql = "
     SELECT
@@ -42,7 +43,7 @@ $sourceSql = "
         p.nomor_invoice,
         'berjalan' AS sumber_data
     FROM pelanggan_salam p
-    WHERE DATE_FORMAT(p.waktu,'%Y-%m')='{$periodeEsc}'
+    WHERE " . ($isYear2025 ? "1=0" : "DATE_FORMAT(p.waktu,'%Y-%m')='{$periodeEsc}'") . "
 
     UNION ALL
 
@@ -68,12 +69,11 @@ $sourceSql = "
         'riwayat' AS sumber_data
     FROM tagihan_salam t
     LEFT JOIN pelanggan_salam p ON p.id=t.pelanggan_id
-    WHERE DATE_FORMAT(t.periode,'%Y-%m')='{$periodeEsc}'
-      AND NOT EXISTS (
+    WHERE " . ($isYear2025 ? "YEAR(t.periode) = 2025" : "DATE_FORMAT(t.periode,'%Y-%m')='{$periodeEsc}' AND NOT EXISTS (
           SELECT 1 FROM pelanggan_salam p2
           WHERE p2.id=t.pelanggan_id
             AND DATE_FORMAT(p2.waktu,'%Y-%m')=DATE_FORMAT(t.periode,'%Y-%m')
-      )
+      )") . "
 ";
 
 $conditions = [salamScopeCondition($koneksi, 'q.alamat')];
@@ -92,7 +92,7 @@ if ($search !== '') {
         OR EXISTS (
             SELECT 1 FROM diskon_pelanggan_salam dps 
             WHERE dps.pelanggan_id = q.pelanggan_id 
-              AND dps.periode = '{$periodeEsc}' 
+              AND " . ($isYear2025 ? "dps.periode LIKE '2025%'" : "dps.periode = '{$periodeEsc}'") . " 
               AND (dps.keterangan LIKE '%{$escaped}%' OR 'diskon' LIKE '%{$escaped}%' OR 'disk' LIKE '%{$escaped}%')
         )
         OR EXISTS (
@@ -111,7 +111,7 @@ if ($filter === 'lunas') {
 } elseif ($filter === 'tidak aktif') {
     $conditions[] = "q.status_pelanggan='Tidak Aktif'";
 } elseif ($filter === 'diskon') {
-    $conditions[] = "EXISTS (SELECT 1 FROM diskon_pelanggan_salam dps WHERE dps.pelanggan_id = q.pelanggan_id AND dps.periode = '{$periodeEsc}')";
+    $conditions[] = "EXISTS (SELECT 1 FROM diskon_pelanggan_salam dps WHERE dps.pelanggan_id = q.pelanggan_id AND " . ($isYear2025 ? "dps.periode LIKE '2025%'" : "dps.periode = '{$periodeEsc}'") . ")";
 } elseif ($filter === 'upgrade') {
     $conditions[] = "EXISTS (SELECT 1 FROM riwayat_paket_salam rps WHERE rps.pelanggan_id = q.pelanggan_id AND rps.jenis_perubahan = 'Upgrade')";
 } elseif ($filter === 'downgrade') {
@@ -135,13 +135,17 @@ if ($result instanceof mysqli_result && $result->num_rows > 0) {
         }
     }
 }
-$paketStatusMap = salamGetLatestPaketStatusMap($koneksi, $pagePelangganIds);
-$diskonMap = salamGetDiskonPeriodeMap($koneksi, $pagePelangganIds, $periode);
+$paketStatusMap = $isYear2025 ? [] : salamGetLatestPaketStatusMap($koneksi, $pagePelangganIds);
+$diskonMap = $isYear2025 ? [] : salamGetDiskonPeriodeMap($koneksi, $pagePelangganIds, $isYear2025 ? '2025-12' : $periode);
 
-function esc($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('esc')) {
+    function esc($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+}
+if (!function_exists('salamPesanTagihanPeriode')) {
 function salamPesanTagihanPeriode(array $row): string {
     $periodeYm = salamPeriodeYm((string) ($row['waktu'] ?? date('Y-m')), date('Y-m'));
-    $periodeLabel = salamBulananIndonesia(($periodeYm . '-01'), false);
+    $is2025 = substr($periodeYm, 0, 4) === '2025';
+    $periodeLabel = $is2025 ? 'Sisa Tagihan 2025' : salamBulananIndonesia(($periodeYm . '-01'), false);
     $masaAktif = salamBulananIndonesia($row['langganan_selesai'] ?? null, true);
     $nominalValue = (float) ($row['tagihan'] ?? 0);
     if ($nominalValue <= 0) $nominalValue = (float) ($row['tarif_langganan'] ?? 0);
@@ -151,14 +155,14 @@ function salamPesanTagihanPeriode(array $row): string {
     $isTunggakanLama = $periodeYm < date('Y-m') && (($row['status_bayar'] ?? 'Belum Lunas') !== 'Lunas');
 
     $pembuka = $isTunggakanLama
-        ? "Kami informasikan bahwa hingga saat ini masih terdapat tunggakan tagihan layanan {$layanan} untuk periode {$periodeLabel} yang belum dilunasi."
+        ? "Kami informasikan bahwa hingga saat ini masih terdapat tunggakan tagihan layanan {$layanan} untuk {$periodeLabel} yang belum dilunasi."
         : "Berikut informasi tagihan layanan {$layanan}.";
 
     return "Halo Bapak/Ibu " . ($row['nama'] ?? '-') . ",\n\n"
         . $pembuka . "\n\n"
         . "ID Pelanggan: " . ($row['id_pelanggan'] ?? '-') . "\n"
         . "Paket: " . ($row['paket'] ?? '-') . "\n"
-        . "Periode Tagihan: {$periodeLabel}\n"
+        . "Periode: {$periodeLabel}\n"
         . "Masa Aktif Sampai: {$masaAktif}\n"
         . "Nominal Tagihan: {$nominal}\n"
         . "Status: " . ($row['status_bayar'] ?? 'Belum Lunas') . "\n\n"
@@ -166,6 +170,8 @@ function salamPesanTagihanPeriode(array $row): string {
         . "Mohon mengirimkan bukti pembayaran untuk proses konfirmasi.\n"
         . "Terima kasih.";
 }
+}
+if (!function_exists('salamPesanSemuaTunggakan')) {
 function salamPesanSemuaTunggakan(array $row, array $tunggakan): string {
     $layanan = salamNamaLayananUntukAlamat($row['alamat'] ?? '');
     $pembayaran = salamInfoPembayaranUntukAlamat($row['alamat'] ?? '');
@@ -173,7 +179,9 @@ function salamPesanSemuaTunggakan(array $row, array $tunggakan): string {
     $total = 0.0;
     foreach ($tunggakan as $item) {
         $total += (float) ($item['nominal'] ?? 0);
-        $lines[] = '- ' . salamBulananIndonesia(($item['periode'] ?? '') . '-01', false) . ': ' . salamRupiah($item['nominal'] ?? 0);
+        $itemPeriode = (string) ($item['periode'] ?? '');
+        $lbl = substr($itemPeriode, 0, 4) === '2025' ? 'Sisa Tagihan 2025' : salamBulananIndonesia($itemPeriode . '-01', false);
+        $lines[] = '- ' . $lbl . ': ' . salamRupiah($item['nominal'] ?? 0);
     }
     return "Halo Bapak/Ibu " . ($row['nama'] ?? '-') . ",\n\n"
         . "Kami informasikan bahwa hingga saat ini masih terdapat beberapa tagihan layanan {$layanan} yang belum dilunasi.\n\n"
@@ -186,6 +194,7 @@ function salamPesanSemuaTunggakan(array $row, array $tunggakan): string {
         . "Mohon mengirimkan bukti pembayaran untuk proses konfirmasi.\n"
         . "Terima kasih.";
 }
+}
 
 ob_start();
 ?>
@@ -195,12 +204,13 @@ ob_start();
 <?php if (!empty($pageRows)): ?>
 <?php $no = $offset + 1; foreach ($pageRows as $row):
     $pelangganId = (int) ($row['pelanggan_id'] ?? $row['id']);
-    $changeInfo = $paketStatusMap[$pelangganId] ?? null;
-    $diskonInfo = $diskonMap[$pelangganId] ?? null;
+    $rowPeriode = salamPeriodeYm((string) ($row['waktu'] ?? $periode), $periode);
+    $rowIs2025 = substr($rowPeriode, 0, 4) === '2025' || substr($periode, 0, 4) === '2025';
+    $changeInfo = $rowIs2025 ? null : ($paketStatusMap[$pelangganId] ?? null);
+    $diskonInfo = $rowIs2025 ? null : ($diskonMap[$pelangganId] ?? null);
     $wa = salamNormalisasiWhatsApp($row['nomor_pelanggan'] ?? '');
     $statusPelanggan = ($row['status_pelanggan'] ?? 'Aktif') === 'Tidak Aktif' ? 'Tidak Aktif' : 'Aktif';
     $statusBayar = ($row['status_bayar'] ?? 'Belum Lunas') === 'Lunas' ? 'Lunas' : 'Belum Lunas';
-    $rowPeriode = salamPeriodeYm((string) ($row['waktu'] ?? $periode), $periode);
     $currentMessage = salamPesanTagihanPeriode($row);
     $tunggakan = salamListTunggakanPelanggan($koneksi, $pelangganId);
     $allMessage = count($tunggakan) > 0 ? salamPesanSemuaTunggakan($row, $tunggakan) : $currentMessage;
@@ -288,8 +298,18 @@ ob_start();
         <?php endif; ?>
     </div>
 </td>
+<?php
+    $rowIs2025 = substr((string)($row['waktu'] ?? ''), 0, 4) === '2025' || substr($periode, 0, 4) === '2025';
+    $displayPeriodeLabel = $rowIs2025 ? 'Sisa Tagihan 2025' : salamBulananIndonesia($row['waktu'] ?? null, false);
+?>
 <td class="muted"><?= esc(salamBulananIndonesia($row['langganan_selesai'] ?? null, true)); ?></td>
-<td><?= esc(salamBulananIndonesia($row['waktu'] ?? null, false)); ?></td>
+<td>
+    <?php if ($rowIs2025): ?>
+        <span class="badge" style="background:#eaf2f8;color:#1b4f72;font-weight:600;padding:4px 8px;border-radius:6px;border:1px solid #aed6f1;">Sisa Tagihan 2025</span>
+    <?php else: ?>
+        <?= esc($displayPeriodeLabel); ?>
+    <?php endif; ?>
+</td>
 <td>
     <strong><?= esc(salamRupiah($row['tagihan'] ?? 0)); ?></strong>
     <?php if ($diskonInfo && (float)$diskonInfo['nominal_diskon'] > 0): ?>
@@ -307,15 +327,15 @@ ob_start();
     data-all-message="<?= esc(rawurlencode($allMessage)); ?>"
     data-arrears-count="<?= count($tunggakan); ?>"
     data-current-unpaid="<?= $isCurrentUnpaid ? '1' : '0'; ?>"
-    data-period-label="<?= esc(salamBulananIndonesia($row['waktu'] ?? null, false)); ?>">Kirim Tagihan</button>
+    data-period-label="<?= esc($displayPeriodeLabel); ?>">Kirim Tagihan</button>
 <?php else: ?>
 <button type="button" class="action-btn btn-tagihan" onclick="Swal.fire({icon:'warning',title:'Nomor WhatsApp belum valid',text:'Isi nomor pelanggan dengan format 08..., +62..., atau 62... terlebih dahulu.'})">Kirim Tagihan</button>
 <?php endif; ?>
 <button class="action-btn btn-resi" onclick="sendReceipt(<?= $pelangganId; ?>, '<?= esc($wa); ?>', '<?= $statusBayar; ?>', '<?= esc($rowPeriode); ?>')">Kirim Resi</button>
 <button class="action-btn btn-print" onclick="window.open('nota_salam.php?id=<?= $pelangganId; ?>&periode=<?= esc($rowPeriode); ?>', '_blank')">Print Nota</button>
 <button class="action-btn btn-edit icon-only" onclick="openEditModal(<?= $pelangganId; ?>, '<?= esc($rowPeriode); ?>')" title="Edit"><i class="fas fa-edit"></i></button>
-<?php if (($row['sumber_data'] ?? '') === 'berjalan'): ?>
-<button class="action-btn btn-delete icon-only" onclick="confirmDelete(<?= $pelangganId; ?>)" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+<?php if ($statusBayar === 'Belum Lunas'): ?>
+<button class="action-btn btn-delete icon-only" onclick="confirmDelete(<?= $pelangganId; ?>, '<?= esc($rowPeriode); ?>')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
 <?php endif; ?>
 </div></td>
 </tr>

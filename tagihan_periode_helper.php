@@ -29,19 +29,23 @@ function salamFindTagihanPeriode(mysqli $koneksi, int $pelangganId, string $peri
 {
     if ($pelangganId <= 0) return null;
     $periodeYm = salamPeriodeYm($periodeYm);
+    $isYear2025 = (substr($periodeYm, 0, 4) === '2025');
 
-    $scopeCurrent = salamScopeCondition($koneksi, 'p.alamat');
-    $stmt = $koneksi->prepare("SELECT p.*, p.id AS pelanggan_id, 'berjalan' AS sumber_data, NULL AS tagihan_riwayat_id
-        FROM pelanggan_salam p
-        WHERE p.id = ? AND DATE_FORMAT(p.waktu, '%Y-%m') = ? AND {$scopeCurrent}
-        LIMIT 1");
-    $stmt->bind_param('is', $pelangganId, $periodeYm);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc() ?: null;
-    $stmt->close();
-    if ($row) return $row;
+    if (!$isYear2025) {
+        $scopeCurrent = salamScopeCondition($koneksi, 'p.alamat');
+        $stmt = $koneksi->prepare("SELECT p.*, p.id AS pelanggan_id, 'berjalan' AS sumber_data, NULL AS tagihan_riwayat_id
+            FROM pelanggan_salam p
+            WHERE p.id = ? AND DATE_FORMAT(p.waktu, '%Y-%m') = ? AND {$scopeCurrent}
+            LIMIT 1");
+        $stmt->bind_param('is', $pelangganId, $periodeYm);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc() ?: null;
+        $stmt->close();
+        if ($row) return $row;
+    }
 
     $scopeHistory = salamScopeCondition($koneksi, 't.alamat_snapshot');
+    $wherePeriod = $isYear2025 ? "YEAR(t.periode) = 2025" : "DATE_FORMAT(t.periode,'%Y-%m') = ?";
     $stmt = $koneksi->prepare("SELECT
             p.id,
             t.pelanggan_id,
@@ -66,9 +70,13 @@ function salamFindTagihanPeriode(mysqli $koneksi, int $pelangganId, string $peri
             t.nominal_tagihan AS nominal_tagihan_asli
         FROM tagihan_salam t
         LEFT JOIN pelanggan_salam p ON p.id=t.pelanggan_id
-        WHERE t.pelanggan_id=? AND DATE_FORMAT(t.periode,'%Y-%m')=? AND {$scopeHistory}
+        WHERE t.pelanggan_id=? AND {$wherePeriod} AND {$scopeHistory}
         LIMIT 1");
-    $stmt->bind_param('is', $pelangganId, $periodeYm);
+    if ($isYear2025) {
+        $stmt->bind_param('i', $pelangganId);
+    } else {
+        $stmt->bind_param('is', $pelangganId, $periodeYm);
+    }
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc() ?: null;
     $stmt->close();

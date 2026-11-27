@@ -377,6 +377,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Edit Tagihan Pelanggan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root{--bg:#f5f7fb;--card:#fff;--accent:#3498db;--muted:#6c757d;--danger:#e74c3c}
         *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Segoe UI,Arial;background:var(--bg);color:#222}
@@ -390,6 +392,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
         .btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block;text-align:center}
         .btn-primary{background:linear-gradient(90deg,var(--accent),#2980b9);color:#fff}.btn-muted{background:#f1f5f9;color:#213}
         .error-message{background:#ffeeee;color:var(--danger);padding:12px;border-radius:6px;margin-bottom:15px;border-left:4px solid var(--danger)}
+        
+        /* Tombol Aksi Riwayat & Diskon */
+        .btn-action-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+        .btn-edit-item {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .btn-edit-item:hover {
+            background: #bae6fd;
+            color: #0284c7;
+            transform: scale(1.08);
+        }
+        .btn-delete-item {
+            background: #fee2e2;
+            color: #b91c1c;
+            margin-left: 4px;
+        }
+        .btn-delete-item:hover {
+            background: #fecaca;
+            color: #dc2626;
+            transform: scale(1.08);
+        }
+        .btn-add-riwayat {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-add-riwayat:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(37,99,235,0.25);
+        }
+        
         @media(max-width:520px){.grid{flex-direction:column}.actions{flex-direction:column}.btn{width:100%}}
     
         /* MOBILE RESPONSIVE FIX FINAL — UI ONLY */
@@ -624,14 +679,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                             <span style="display:inline-flex;width:24px;height:24px;border-radius:6px;background:#e0f2fe;color:#0284c7;align-items:center;justify-content:center;font-size:12px;">📊</span>
                             Riwayat Perubahan Paket (Upgrade / Downgrade)
                         </div>
-                        <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
-                            <?= count($riwayatPaket); ?> Catatan
-                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button type="button" class="btn-add-riwayat" onclick="openTambahRiwayatModal()" title="Tambah catatan riwayat perubahan paket manual">
+                                <i class="fas fa-plus"></i> Tambah Riwayat
+                            </button>
+                            <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                                <?= count($riwayatPaket); ?> Catatan
+                            </span>
+                        </div>
                     </div>
 
                     <?php if (empty($riwayatPaket)): ?>
-                        <div style="padding:16px;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#94a3b8;font-size:13px;">
-                            Belum ada riwayat perubahan paket untuk pelanggan ini.
+                        <div style="padding:20px 16px;text-align:center;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:13px;">
+                            <p style="margin:0 0 10px 0;">Belum ada riwayat perubahan paket untuk pelanggan ini.</p>
+                            <button type="button" class="btn-add-riwayat" onclick="openTambahRiwayatModal()">
+                                <i class="fas fa-plus"></i> Tambah Catatan Riwayat Baru
+                            </button>
                         </div>
                     <?php else: ?>
                         <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;">
@@ -647,6 +710,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                                             <th style="padding:8px 10px;font-weight:600;">Selisih</th>
                                             <th style="padding:8px 10px;font-weight:600;">Alasan</th>
                                             <th style="padding:8px 10px;font-weight:600;">Dicatat Oleh</th>
+                                            <th style="padding:8px 10px;font-weight:600;text-align:center;">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -665,6 +729,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                                             $isHistoricalRow = (($item['sumber'] ?? 'manual') === 'deteksi_historis');
                                             $tglPerubahan = !empty($item['tanggal_perubahan']) ? salamTanggalWaktuIndonesia($item['tanggal_perubahan']) : '-';
                                             $tglEfektif = !empty($item['tanggal_efektif']) ? salamBulananIndonesia($item['tanggal_efektif'], true) : '-';
+                                            $rowPayload = [
+                                                'id' => (int) ($item['id'] ?? 0),
+                                                'pelanggan_id' => (int) $id,
+                                                'tanggal_efektif' => (string) ($item['tanggal_efektif'] ?? date('Y-m-d')),
+                                                'jenis_perubahan' => $jenis,
+                                                'paket_lama' => (string) ($item['paket_lama'] ?? ''),
+                                                'paket_baru' => (string) ($item['paket_baru'] ?? ''),
+                                                'tarif_lama' => (float) ($item['tarif_lama'] ?? 0),
+                                                'tarif_baru' => (float) ($item['tarif_baru'] ?? 0),
+                                                'alasan' => (string) ($item['alasan'] ?? ''),
+                                                'sumber' => (string) ($item['sumber'] ?? 'manual'),
+                                            ];
                                         ?>
                                         <tr style="border-bottom:1px solid #f1f5f9;">
                                             <td style="padding:8px 10px;color:#94a3b8;"><?= $noR++; ?></td>
@@ -704,6 +780,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                                             </td>
                                             <td style="padding:8px 10px;white-space:nowrap;color:#64748b;font-size:11px;">
                                                 <?= htmlspecialchars((string)($item['admin_nama'] ?: 'Admin')); ?>
+                                            </td>
+                                            <td style="padding:8px 10px;white-space:nowrap;text-align:center;">
+                                                <button type="button" class="btn-action-icon btn-edit-item" 
+                                                        onclick='openEditRiwayatModal(<?= json_encode($rowPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' 
+                                                        title="Edit Riwayat Perubahan Paket">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn-action-icon btn-delete-item" 
+                                                        onclick="hapusRiwayatPaket(<?= (int)($item['id'] ?? 0); ?>, '<?= htmlspecialchars(addslashes((string)$item['paket_baru'])); ?>', '<?= (string)($item['tanggal_efektif'] ?? ''); ?>')" 
+                                                        title="Hapus Riwayat Perubahan Paket">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
@@ -747,6 +835,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                                             <th style="padding:8px 10px;font-weight:600;">Tagihan Bersih</th>
                                             <th style="padding:8px 10px;font-weight:600;">Keterangan Billing</th>
                                             <th style="padding:8px 10px;font-weight:600;">Sumber Data</th>
+                                            <th style="padding:8px 10px;font-weight:600;text-align:center;">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -767,6 +856,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                                             <td style="padding:8px 10px;font-weight:700;color:#16a34a;white-space:nowrap;"><?= htmlspecialchars(salamRupiah($dItem['tarif_setelah_diskon'] ?? 0)); ?></td>
                                             <td style="padding:8px 10px;color:#334155;font-style:italic;"><?= htmlspecialchars((string)($dItem['keterangan'] ?: '-')); ?></td>
                                             <td style="padding:8px 10px;color:#64748b;font-size:11px;white-space:nowrap;"><?= htmlspecialchars((string)($dItem['admin_nama'] ?: 'Sistem (Data Billing)')); ?></td>
+                                            <td style="padding:8px 10px;white-space:nowrap;text-align:center;">
+                                                <button type="button" class="btn-action-icon btn-delete-item" 
+                                                        onclick="hapusDiskonPelanggan(<?= (int)($dItem['id'] ?? 0); ?>, '<?= htmlspecialchars(addslashes((string)$tglPeriode)); ?>')" 
+                                                        title="Hapus Catatan Diskon">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -953,6 +1049,285 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     });
 
     loadReadonlyPppoeInfo();
+})();
+</script>
+
+<script>
+// --- LOGIKA CRUD RIWAYAT PERUBAHAN PAKET & DISKON ---
+(function() {
+    const currentPelangganId = <?= (int) $id; ?>;
+    const currentPaketNama = <?= json_encode((string) ($data['paket'] ?? '')); ?>;
+    const currentTarif = <?= (float) ($data['tarif_langganan'] ?? $data['tagihan'] ?? 0); ?>;
+
+    function safeEscape(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    }
+
+    function getRiwayatModalHtml(isEdit, data = {}) {
+        const tgl = data.tanggal_efektif || <?= json_encode(date('Y-m-d')); ?>;
+        const pLama = data.paket_lama !== undefined ? data.paket_lama : currentPaketNama;
+        const pBaru = data.paket_baru !== undefined ? data.paket_baru : '';
+        const tLama = data.tarif_lama !== undefined ? data.tarif_lama : currentTarif;
+        const tBaru = data.tarif_baru !== undefined ? data.tarif_baru : '';
+        const jenis = data.jenis_perubahan || 'Penyesuaian Tarif';
+        const alasan = data.alasan || '';
+
+        return `
+        <div style="text-align:left;font-size:13px;color:#334155;padding:4px 2px;">
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">
+                    Tanggal Efektif <span style="color:#ef4444;">*</span>
+                </label>
+                <input type="date" id="swal-tgl-efektif" class="swal2-input" 
+                       style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                       value="${safeEscape(tgl)}">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">Paket Lama</label>
+                    <input type="text" id="swal-paket-lama" class="swal2-input" 
+                           style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                           placeholder="Contoh: Paket 150K" value="${safeEscape(pLama)}">
+                </div>
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">
+                        Paket Baru <span style="color:#ef4444;">*</span>
+                    </label>
+                    <input type="text" id="swal-paket-baru" class="swal2-input" 
+                           style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                           placeholder="Contoh: Paket 100K" value="${safeEscape(pBaru)}">
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">Tarif Lama (Rp)</label>
+                    <input type="number" id="swal-tarif-lama" class="swal2-input" 
+                           style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                           placeholder="150000" step="1000" min="0" value="${tLama}">
+                </div>
+                <div>
+                    <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">
+                        Tarif Baru (Rp) <span style="color:#ef4444;">*</span>
+                    </label>
+                    <input type="number" id="swal-tarif-baru" class="swal2-input" 
+                           style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                           placeholder="100000" step="1000" min="0" value="${tBaru}">
+                </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">Jenis Perubahan</label>
+                <select id="swal-jenis-perubahan" class="swal2-select" 
+                        style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;display:block;">
+                    <option value="Upgrade" ${jenis === 'Upgrade' ? 'selected' : ''}>↑ Upgrade (Kenaikan Tarif)</option>
+                    <option value="Downgrade" ${jenis === 'Downgrade' ? 'selected' : ''}>↓ Downgrade (Penurunan Tarif)</option>
+                    <option value="Penyesuaian Tarif" ${jenis === 'Penyesuaian Tarif' ? 'selected' : ''}>↔ Penyesuaian Tarif (Tarif Sama)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:6px;">
+                <label style="display:block;font-weight:600;margin-bottom:5px;color:#1e293b;">Alasan / Keterangan</label>
+                <input type="text" id="swal-alasan" class="swal2-input" 
+                       style="width:100%;margin:0;font-size:13px;height:38px;padding:6px 10px;" 
+                       placeholder="Contoh: Permintaan pelanggan / penyesuaian pemakaian" value="${safeEscape(alasan)}">
+            </div>
+        </div>
+        `;
+    }
+
+    function attachRiwayatSwalEvents() {
+        const tLamaEl = document.getElementById('swal-tarif-lama');
+        const tBaruEl = document.getElementById('swal-tarif-baru');
+        const jenisEl = document.getElementById('swal-jenis-perubahan');
+        if (!tLamaEl || !tBaruEl || !jenisEl) return;
+
+        function autoJenis() {
+            const tLama = parseFloat(tLamaEl.value || 0);
+            const tBaru = parseFloat(tBaruEl.value || 0);
+            if (tLama > 0 && tBaru > 0) {
+                if (tBaru > tLama) jenisEl.value = 'Upgrade';
+                else if (tBaru < tLama) jenisEl.value = 'Downgrade';
+                else jenisEl.value = 'Penyesuaian Tarif';
+            }
+        }
+        tLamaEl.addEventListener('input', autoJenis);
+        tBaruEl.addEventListener('input', autoJenis);
+    }
+
+    function submitRiwayatApi(payload) {
+        Swal.fire({
+            title: 'Menyimpan...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        fetch('api_riwayat_paket.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: res.message || 'Riwayat perubahan paket berhasil disimpan.',
+                    timer: 1400,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Gagal!', res.message || 'Terjadi kesalahan saat menyimpan.', 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error!', err.message || 'Koneksi ke server terputus.', 'error');
+        });
+    }
+
+    window.openTambahRiwayatModal = function() {
+        Swal.fire({
+            title: 'Tambah Riwayat Perubahan Paket',
+            html: getRiwayatModalHtml(false),
+            showCancelButton: true,
+            confirmButtonText: 'Simpan Riwayat',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#64748b',
+            didOpen: attachRiwayatSwalEvents,
+            preConfirm: () => {
+                const tgl = document.getElementById('swal-tgl-efektif').value.trim();
+                const pBaru = document.getElementById('swal-paket-baru').value.trim();
+                const tBaruVal = document.getElementById('swal-tarif-baru').value;
+                if (!tgl || !pBaru || tBaruVal === '') {
+                    Swal.showValidationMessage('Tanggal Efektif, Paket Baru, dan Tarif Baru wajib diisi.');
+                    return false;
+                }
+                return {
+                    action: 'create',
+                    pelanggan_id: currentPelangganId,
+                    tanggal_efektif: tgl,
+                    paket_lama: document.getElementById('swal-paket-lama').value.trim(),
+                    paket_baru: pBaru,
+                    tarif_lama: parseFloat(document.getElementById('swal-tarif-lama').value || 0),
+                    tarif_baru: parseFloat(tBaruVal || 0),
+                    jenis_perubahan: document.getElementById('swal-jenis-perubahan').value,
+                    alasan: document.getElementById('swal-alasan').value.trim()
+                };
+            }
+        }).then(result => {
+            if (result.isConfirmed && result.value) {
+                submitRiwayatApi(result.value);
+            }
+        });
+    };
+
+    window.openEditRiwayatModal = function(data) {
+        Swal.fire({
+            title: 'Edit Riwayat Perubahan Paket',
+            html: getRiwayatModalHtml(true, data),
+            showCancelButton: true,
+            confirmButtonText: 'Perbarui Riwayat',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#0284c7',
+            cancelButtonColor: '#64748b',
+            didOpen: attachRiwayatSwalEvents,
+            preConfirm: () => {
+                const tgl = document.getElementById('swal-tgl-efektif').value.trim();
+                const pBaru = document.getElementById('swal-paket-baru').value.trim();
+                const tBaruVal = document.getElementById('swal-tarif-baru').value;
+                if (!tgl || !pBaru || tBaruVal === '') {
+                    Swal.showValidationMessage('Tanggal Efektif, Paket Baru, dan Tarif Baru wajib diisi.');
+                    return false;
+                }
+                return {
+                    action: (data.id && data.id > 0) ? 'update' : 'create',
+                    id: data.id || 0,
+                    pelanggan_id: currentPelangganId,
+                    tanggal_efektif: tgl,
+                    paket_lama: document.getElementById('swal-paket-lama').value.trim(),
+                    paket_baru: pBaru,
+                    tarif_lama: parseFloat(document.getElementById('swal-tarif-lama').value || 0),
+                    tarif_baru: parseFloat(tBaruVal || 0),
+                    jenis_perubahan: document.getElementById('swal-jenis-perubahan').value,
+                    alasan: document.getElementById('swal-alasan').value.trim()
+                };
+            }
+        }).then(result => {
+            if (result.isConfirmed && result.value) {
+                submitRiwayatApi(result.value);
+            }
+        });
+    };
+
+    window.hapusRiwayatPaket = function(id, paketBaru, tglEfektif) {
+        if (!id || id <= 0) {
+            Swal.fire('Informasi', 'Catatan ini tidak dapat dihapus langsung karena belum memiliki ID di database.', 'info');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Hapus Catatan Riwayat?',
+            text: `Catatan perubahan paket "${paketBaru}" (${tglEfektif}) akan dihapus secara permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus Catatan',
+            cancelButtonText: 'Batal'
+        }).then(result => {
+            if (result.isConfirmed) {
+                submitRiwayatApi({
+                    action: 'delete',
+                    id: id,
+                    pelanggan_id: currentPelangganId
+                });
+            }
+        });
+    };
+
+    window.hapusDiskonPelanggan = function(id, periodeLabel) {
+        if (!id || id <= 0) return;
+
+        Swal.fire({
+            title: 'Hapus Catatan Diskon?',
+            text: `Potongan diskon untuk periode ${periodeLabel} akan dihapus secara permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus Diskon',
+            cancelButtonText: 'Batal'
+        }).then(result => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                fetch('api_diskon.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', id: id, pelanggan_id: currentPelangganId })
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Terhapus!',
+                            text: res.message,
+                            timer: 1400,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Gagal!', res.message || 'Gagal menghapus diskon.', 'error');
+                    }
+                })
+                .catch(() => Swal.fire('Error!', 'Tidak dapat menghubungi server.', 'error'));
+            }
+        });
+    };
 })();
 </script>
 </body>

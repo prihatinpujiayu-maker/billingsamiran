@@ -30,7 +30,7 @@ $subjudul = $isLunas ? 'Bukti pembayaran pelanggan' : 'Informasi tagihan pelangg
 $nominal = $isLunas ? (float) ($data['nominal_dibayar'] ?? $data['tarif_langganan'] ?? 0) : (float) ($data['tagihan'] ?? 0);
 $nomorNota = !empty($data['nomor_invoice']) ? (string) $data['nomor_invoice'] : salamKodeWilayah($data['alamat'] ?? '') . '-' . str_replace('-', '', $periode) . '-' . str_pad((string)$id,5,'0',STR_PAD_LEFT);
 $tanggalCetak = salamTanggalWaktuIndonesia();
-$periodeTagihan = salamBulananIndonesia($data['waktu'] ?? null, false);
+$periodeTagihan = substr($periode, 0, 4) === '2025' || substr((string)($data['waktu'] ?? ''), 0, 4) === '2025' ? 'Sisa Tagihan 2025' : salamBulananIndonesia($data['waktu'] ?? null, false);
 $masaAktif = salamBulananIndonesia($data['langganan_selesai'] ?? null, true);
 $tanggalBayar = $isLunas ? salamBulananIndonesia($data['tanggal_bayar'] ?? null, true) : '-';
 ?>
